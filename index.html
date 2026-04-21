@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Canteen Preorder System</title>
+<title>Canteen System</title>
 <style>
 body { font-family: Arial; margin:0; background:#f4f6f9; }
 header { background:#2c3e50; color:white; padding:15px; text-align:center; }
@@ -13,17 +13,28 @@ button { padding:6px 10px; border:none; border-radius:5px; cursor:pointer; }
 .add { background:#27ae60; color:white; }
 .remove { background:#e74c3c; color:white; }
 .primary { background:#2980b9; color:white; }
-select { padding:6px; margin-bottom:10px; }
+select, input { padding:6px; margin:5px 0; }
 img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
+#app { display:none; }
 </style>
 </head>
 <body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="container">
+<h2>Login</h2>
+<input type="text" id="username" placeholder="Username"><br>
+<input type="password" id="password" placeholder="Password"><br>
+<button class="primary" onclick="login()">Login</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
 <header>
 <h2>Canteen Preorder System</h2>
 </header>
 
 <div class="container">
-
 <h3>Select Canteen</h3>
 <select id="canteenSelect" onchange="switchCanteen()"></select>
 
@@ -42,28 +53,49 @@ img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
 <input type="text" id="itemName" placeholder="Item Name">
 <input type="number" id="itemPrice" placeholder="Price">
 <button onclick="addItem()">Add Item</button>
-
+</div>
 </div>
 
 <script>
-// 5 Canteens
+
+// LOGIN FUNCTION
+function login(){
+ let u = document.getElementById("username").value;
+ let p = document.getElementById("password").value;
+ if(u === "admin" && p === "1234"){
+  document.getElementById("loginPage").style.display="none";
+  document.getElementById("app").style.display="block";
+ } else {
+  alert("Invalid login (use admin / 1234)");
+ }
+}
+
+// DATA WITH MORE ITEMS + REAL IMAGES
 let canteens = {
  "Ball": [
-  {name:"Burger", price:50, img:"https://picsum.photos/80?1"},
-  {name:"Tea", price:10, img:"https://picsum.photos/80?2"}
+  {name:"Burger", price:50, img:"https://images.unsplash.com/photo-1550547660-d9450f859349"},
+  {name:"French Fries", price:40, img:"https://images.unsplash.com/photo-1541592106381-b31e9677c0e5"},
+  {name:"Tea", price:10, img:"https://images.unsplash.com/photo-1511920170033-f8396924c348"}
  ],
  "Pencil": [
-  {name:"Pizza", price:120, img:"https://picsum.photos/80?3"},
-  {name:"Coffee", price:20, img:"https://picsum.photos/80?4"}
+  {name:"Pizza", price:120, img:"https://images.unsplash.com/photo-1548365328-5b849a1a0f7c"},
+  {name:"Coffee", price:20, img:"https://images.unsplash.com/photo-1509042239860-f550ce710b93"},
+  {name:"Sandwich", price:60, img:"https://images.unsplash.com/photo-1553909489-cd47e0ef937f"}
  ],
  "KC": [
-  {name:"Sandwich", price:40, img:"https://picsum.photos/80?5"}
+  {name:"Dosa", price:30, img:"https://images.unsplash.com/photo-1589308078059-be1415eab4c3"},
+  {name:"Idli", price:25, img:"https://images.unsplash.com/photo-1626777552726-4a6b54e7a7bb"},
+  {name:"Vada", price:20, img:"https://images.unsplash.com/photo-1604908177078-1c2d7c4f4f3a"}
  ],
  "3RD Campus": [
-  {name:"Noodles", price:60, img:"https://picsum.photos/80?6"}
+  {name:"Noodles", price:60, img:"https://images.unsplash.com/photo-1585032226651-759b368d7246"},
+  {name:"Manchurian", price:70, img:"https://images.unsplash.com/photo-1604908177522-429bc5a7c6c0"},
+  {name:"Fried Rice", price:80, img:"https://images.unsplash.com/photo-1604908177522-429bc5a7c6c0"}
  ],
  "Eat&Play": [
-  {name:"Fried Rice", price:70, img:"https://picsum.photos/80?7"}
+  {name:"Ice Cream", price:50, img:"https://images.unsplash.com/photo-1497034825429-c343d7c6a68f"},
+  {name:"Milkshake", price:70, img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699"},
+  {name:"Cake", price:90, img:"https://images.unsplash.com/photo-1578985545062-69928b1d9587"}
  ]
 };
 
