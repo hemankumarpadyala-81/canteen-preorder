@@ -2,91 +2,68 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Canteen Pre-Order System</title>
+<title>Canteen Pre-Order</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f4f6f8;
-        margin: 0;
-        text-align: center;
-    }
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f4f6f8;
+    text-align: center;
+}
 
-    h1 {
-        background: #2c3e50;
-        color: white;
-        padding: 15px;
-        margin: 0;
-    }
+h1 {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    margin: 0;
+}
 
-    .login, .container {
-        margin-top: 80px;
-    }
+.login, .container {
+    margin-top: 80px;
+}
 
-    .container {
-        display: none;
-    }
+.container {
+    display: none;
+}
 
-    input, button {
-        padding: 10px;
-        margin: 8px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-    }
+input, button {
+    padding: 10px;
+    margin: 8px;
+    border-radius: 5px;
+}
 
-    button {
-        background: #27ae60;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
+button {
+    background: #27ae60;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
 
-    button:hover {
-        background: #219150;
-    }
+button:hover {
+    background: #219150;
+}
 
-    .menu {
-        margin: 20px;
-    }
+.menu {
+    margin: 20px;
+}
 
-    .item {
-        background: white;
-        padding: 15px;
-        margin: 10px;
-        display: inline-block;
-        width: 200px;
-        border-radius: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        transition: 0.3s;
-    }
+.item {
+    background: white;
+    padding: 15px;
+    margin: 10px;
+    display: inline-block;
+    width: 200px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
 
-    .item:hover {
-        transform: scale(1.05);
-    }
-
-    .item img {
-        width: 100%;
-        height: 120px;
-        border-radius: 8px;
-    }
-
-    #cart {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        display: inline-block;
-        margin-top: 20px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    .deleteBtn {
-        background: #e74c3c;
-        margin-left: 10px;
-    }
-
-    .deleteBtn:hover {
-        background: #c0392b;
-    }
+#cart {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    display: inline-block;
+}
 </style>
 </head>
 
@@ -95,8 +72,7 @@
 <!-- LOGIN -->
 <div class="login" id="loginPage">
     <h2>Login</h2>
-    <input type="text" id="name" placeholder="Enter your name">
-    <br>
+    <input type="text" id="name" placeholder="Enter your name"><br>
     <button onclick="login()">Login</button>
 </div>
 
@@ -105,159 +81,146 @@
     <h1>Canteen Pre-Order</h1>
     <h2 id="welcome"></h2>
 
-    <div class="menu">
-        <div class="item">
-            <img src="https://via.placeholder.com/200x120">
-            <h3>Burger</h3>
-            <p>₹50</p>
-            <button onclick="addToCart('Burger', 50)">Add</button>
-        </div>
-
-        <div class="item">
-            <img src="https://via.placeholder.com/200x120">
-            <h3>Pizza</h3>
-            <p>₹100</p>
-            <button onclick="addToCart('Pizza', 100)">Add</button>
-        </div>
-
-        <div class="item">
-            <img src="https://via.placeholder.com/200x120">
-            <h3>Sandwich</h3>
-            <p>₹40</p>
-            <button onclick="addToCart('Sandwich', 40)">Add</button>
-        </div>
-    </div>
+    <div class="menu" id="menu"></div>
 
     <div id="cart">
         <h2>Your Cart</h2>
         <ul id="cartItems"></ul>
         <h3>Total: ₹<span id="total">0</span></h3>
 
-        <label>Pickup Time:</label><br>
         <input type="time" id="time"><br>
-
         <button onclick="placeOrder()">Place Order</button>
     </div>
 </div>
 
 <script>
+const API = "http://127.0.0.1:5000";
+
 let cart = [];
 
-/* ---------- INITIAL LOAD ---------- */
-window.onload = function () {
-    loadUser();
-    loadCart();
-};
-
 /* ---------- LOGIN ---------- */
-function login() {
+async function login() {
     const name = document.getElementById("name").value.trim();
 
     if (!name) {
-        alert("Please enter your name.");
+        alert("Enter name");
         return;
     }
 
-    localStorage.setItem("username", name);
-    showMainPage();
-}
+    const res = await fetch(API + "/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name})
+    });
 
-/* ---------- USER LOAD ---------- */
-function loadUser() {
-    const name = localStorage.getItem("username");
+    const data = await res.json();
 
-    if (name) {
-        showMainPage();
+    if (res.ok) {
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("mainPage").style.display = "block";
+        document.getElementById("welcome").innerText = data.message;
+
+        loadMenu();
+    } else {
+        alert(data.error);
     }
 }
 
-/* ---------- SHOW MAIN ---------- */
-function showMainPage() {
-    document.getElementById("loginPage").style.display = "none";
-    document.getElementById("mainPage").style.display = "block";
+/* ---------- LOAD MENU ---------- */
+async function loadMenu() {
+    const res = await fetch(API + "/menu");
+    const menu = await res.json();
 
-    const name = localStorage.getItem("username");
-    document.getElementById("welcome").innerText = `Welcome, ${name}`;
+    const menuDiv = document.getElementById("menu");
+    menuDiv.innerHTML = "";
+
+    menu.forEach(item => {
+        menuDiv.innerHTML += `
+            <div class="item">
+                <h3>${item.name}</h3>
+                <p>₹${item.price}</p>
+                <button onclick="addToCart('${item.name}', ${item.price})">
+                    Add
+                </button>
+            </div>
+        `;
+    });
 }
 
-/* ---------- CART FUNCTIONS ---------- */
-function addToCart(item, price) {
-    const existing = cart.find(i => i.item === item);
+/* ---------- CART ---------- */
+function addToCart(name, price) {
+    const existing = cart.find(i => i.name === name);
 
     if (existing) {
         existing.qty++;
     } else {
-        cart.push({ item, price, qty: 1 });
+        cart.push({name, price, qty: 1});
     }
 
-    saveCart();
-    displayCart();
-}
-
-function deleteItem(index) {
-    cart.splice(index, 1);
-    saveCart();
     displayCart();
 }
 
 function displayCart() {
     const list = document.getElementById("cartItems");
-    let total = 0;
-
     list.innerHTML = "";
 
-    cart.forEach((i, index) => {
-        const itemTotal = i.price * i.qty;
+    let total = 0;
+
+    cart.forEach((item, index) => {
+        const itemTotal = item.price * item.qty;
         total += itemTotal;
 
-        const li = document.createElement("li");
-        li.innerHTML = `
-            ${i.item} x ${i.qty} - ₹${itemTotal}
-            <button class="deleteBtn" onclick="deleteItem(${index})">X</button>
+        list.innerHTML += `
+            <li>
+                ${item.name} x ${item.qty} - ₹${itemTotal}
+                <button onclick="removeItem(${index})">X</button>
+            </li>
         `;
-        list.appendChild(li);
     });
 
     document.getElementById("total").innerText = total;
 }
 
-/* ---------- LOCAL STORAGE ---------- */
-function saveCart() {
-    localStorage.setItem("cart", JSON.stringify(cart));
-}
-
-function loadCart() {
-    const data = localStorage.getItem("cart");
-
-    if (data) {
-        cart = JSON.parse(data);
-        displayCart();
-    }
+function removeItem(index) {
+    cart.splice(index, 1);
+    displayCart();
 }
 
 /* ---------- ORDER ---------- */
-function placeOrder() {
+async function placeOrder() {
     const time = document.getElementById("time").value;
 
     if (cart.length === 0) {
-        alert("Cart is empty!");
+        alert("Cart empty");
         return;
     }
 
     if (!time) {
-        alert("Please select a pickup time.");
+        alert("Select pickup time");
         return;
     }
 
-    const summary = cart.map(i => `${i.item} x ${i.qty}`).join("\n");
+    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-    alert(
-        `Order Placed Successfully!\n\nItems:\n${summary}\n\nPickup Time: ${time}`
-    );
+    const res = await fetch(API + "/order", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            items: cart,
+            total: total,
+            pickup_time: time
+        })
+    });
 
-    cart = [];
-    saveCart();
-    displayCart();
+    const data = await res.json();
+
+    if (res.ok) {
+        alert("Order placed successfully!");
+        cart = [];
+        displayCart();
+    } else {
+        alert(data.error);
+    }
 }
 </script>
 
