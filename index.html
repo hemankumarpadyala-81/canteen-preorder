@@ -3,38 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Canteen System</title>
+<title>Canteen Preorder System</title>
 <style>
-body { font-family: Arial; margin:0; background:#f4f6f9; }
-header { background:#2c3e50; color:white; padding:15px; text-align:center; }
-.container { padding:20px; }
-.card { background:white; padding:12px; margin:10px 0; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);} 
-button { padding:6px 10px; border:none; border-radius:5px; cursor:pointer; }
-.add { background:#27ae60; color:white; }
-.remove { background:#e74c3c; color:white; }
-.primary { background:#2980b9; color:white; }
-select, input { padding:6px; margin:5px 0; }
-img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
+:root {
+  --primary:#2c3e50;
+  --accent:#2980b9;
+  --success:#27ae60;
+  --danger:#e74c3c;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Segoe UI, Arial; background:#f4f6f9; }
+header { background:var(--primary); color:#fff; padding:15px; text-align:center; }
+.container { max-width:1000px; margin:auto; padding:20px; }
+.card { background:#fff; padding:12px; margin:10px 0; border-radius:10px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.08);} 
+img { width:60px; height:60px; border-radius:8px; object-fit:cover; margin-right:10px; }
+button { border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+.add { background:var(--success); color:#fff; }
+.remove { background:var(--danger); color:#fff; }
+.primary { background:var(--accent); color:#fff; }
+input, select { padding:6px; margin:6px 0; width:100%; }
+.flex { display:flex; align-items:center; }
 #app { display:none; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 <div id="loginPage" class="container">
 <h2>Student Login</h2>
-<input type="text" id="username" placeholder="Enter Name"><br>
-<input type="text" id="studentId" placeholder="Enter ID"><br>
+<input type="text" id="username" placeholder="Enter Name">
+<input type="text" id="studentId" placeholder="Enter ID">
 <button class="primary" onclick="login()">Enter</button>
 </div>
 
-<!-- MAIN APP -->
+<!-- APP -->
 <div id="app">
 <header>
-<h2>Canteen Preorder System</h2>
+<h2 id="welcome"></h2>
 </header>
-
 <div class="container">
+
 <h3>Select Canteen</h3>
 <select id="canteenSelect" onchange="switchCanteen()"></select>
 
@@ -53,156 +61,162 @@ img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
 <input type="text" id="itemName" placeholder="Item Name">
 <input type="number" id="itemPrice" placeholder="Price">
 <button onclick="addItem()">Add Item</button>
+
+<button style="margin-top:10px" onclick="logout()">Logout</button>
+
 </div>
 </div>
 
 <script>
+'use strict';
 
-// LOGIN FUNCTION
+// LOGIN
 function login(){
- let name = document.getElementById("username").value.trim();
- let id = document.getElementById("studentId").value.trim();
- if(name !== "" && id !== ""){
-  localStorage.setItem("studentName", name);
-  localStorage.setItem("studentId", id);
-  document.getElementById("loginPage").style.display="none";
-  document.getElementById("app").style.display="block";
- } else {
-  alert("Please enter Name and ID");
- }
-} else {
-  alert("Invalid login (use admin / 1234)");
- }
+ const name = document.getElementById('username').value.trim();
+ const id = document.getElementById('studentId').value.trim();
+ if(!name || !id){ alert('Enter Name & ID'); return; }
+ localStorage.setItem('name', name);
+ localStorage.setItem('id', id);
+ initApp();
 }
 
-// DATA WITH MORE ITEMS + REAL IMAGES
-let canteens = {
- "Ball": [
-  {name:"Burger", price:50, img:"https://images.unsplash.com/photo-1550547660-d9450f859349"},
-  {name:"French Fries", price:40, img:"https://images.unsplash.com/photo-1541592106381-b31e9677c0e5"},
-  {name:"Tea", price:10, img:"https://images.unsplash.com/photo-1511920170033-f8396924c348"}
+function logout(){
+ localStorage.clear();
+ location.reload();
+}
+
+function initApp(){
+ document.getElementById('loginPage').style.display='none';
+ document.getElementById('app').style.display='block';
+ const name = localStorage.getItem('name');
+ document.getElementById('welcome').innerText = 'Welcome, ' + name;
+ loadCanteens();
+ renderMenu();
+ renderCart();
+ renderHistory();
+}
+
+// DATA
+const canteens = {
+ "Ball":[
+  {name:"Burger",price:50,img:"https://picsum.photos/80?1"},
+  {name:"Fries",price:40,img:"https://picsum.photos/80?2"},
+  {name:"Tea",price:10,img:"https://picsum.photos/80?3"}
  ],
- "Pencil": [
-  {name:"Pizza", price:120, img:"https://images.unsplash.com/photo-1548365328-5b849a1a0f7c"},
-  {name:"Coffee", price:20, img:"https://images.unsplash.com/photo-1509042239860-f550ce710b93"},
-  {name:"Sandwich", price:60, img:"https://images.unsplash.com/photo-1553909489-cd47e0ef937f"}
+ "Pencil":[
+  {name:"Pizza",price:120,img:"https://picsum.photos/80?4"},
+  {name:"Coffee",price:20,img:"https://picsum.photos/80?5"},
+  {name:"Sandwich",price:60,img:"https://picsum.photos/80?6"}
  ],
- "KC": [
-  {name:"Dosa", price:30, img:"https://images.unsplash.com/photo-1589308078059-be1415eab4c3"},
-  {name:"Idli", price:25, img:"https://images.unsplash.com/photo-1626777552726-4a6b54e7a7bb"},
-  {name:"Vada", price:20, img:"https://images.unsplash.com/photo-1604908177078-1c2d7c4f4f3a"}
+ "KC":[
+  {name:"Dosa",price:30,img:"https://picsum.photos/80?7"},
+  {name:"Idli",price:25,img:"https://picsum.photos/80?8"},
+  {name:"Vada",price:20,img:"https://picsum.photos/80?9"}
  ],
- "3RD Campus": [
-  {name:"Noodles", price:60, img:"https://images.unsplash.com/photo-1585032226651-759b368d7246"},
-  {name:"Manchurian", price:70, img:"https://images.unsplash.com/photo-1604908177522-429bc5a7c6c0"},
-  {name:"Fried Rice", price:80, img:"https://images.unsplash.com/photo-1604908177522-429bc5a7c6c0"}
+ "3RD Campus":[
+  {name:"Noodles",price:60,img:"https://picsum.photos/80?10"},
+  {name:"Manchurian",price:70,img:"https://picsum.photos/80?11"}
  ],
- "Eat&Play": [
-  {name:"Ice Cream", price:50, img:"https://images.unsplash.com/photo-1497034825429-c343d7c6a68f"},
-  {name:"Milkshake", price:70, img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699"},
-  {name:"Cake", price:90, img:"https://images.unsplash.com/photo-1578985545062-69928b1d9587"}
+ "Eat&Play":[
+  {name:"Ice Cream",price:50,img:"https://picsum.photos/80?12"},
+  {name:"Milkshake",price:70,img:"https://picsum.photos/80?13"}
  ]
 };
 
-let currentCanteen = "Ball";
+let currentCanteen = 'Ball';
 let cart = [];
 let history = [];
 let undoStack = [];
 let redoStack = [];
 
-function loadCanteens() {
- let select = document.getElementById("canteenSelect");
+function loadCanteens(){
+ const select = document.getElementById('canteenSelect');
  select.innerHTML = Object.keys(canteens)
-  .map(c => `<option value="${c}">${c}</option>`).join("");
+  .map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
-function switchCanteen() {
- currentCanteen = document.getElementById("canteenSelect").value;
+function switchCanteen(){
+ currentCanteen = document.getElementById('canteenSelect').value;
  renderMenu();
 }
 
-function renderMenu() {
- let menu = canteens[currentCanteen];
- let html="";
- menu.forEach((item,i)=>{
- html += `<div class='card'>
- <img src='${item.img}' onerror="this.src='https://picsum.photos/80'">
- <b>${item.name}</b> - ₹${item.price}
- <button class='add' onclick='addToCart(${i})'>Add</button>
- </div>`;
- });
- document.getElementById("menuList").innerHTML = html;
+function renderMenu(){
+ const menu = canteens[currentCanteen];
+ const html = menu.map((item,i)=>`
+ <div class='card'>
+   <div class='flex'>
+     <img src='${item.img}' onerror="this.src='https://picsum.photos/80'">
+     <div>${item.name}<br>₹${item.price}</div>
+   </div>
+   <button class='add' onclick='addToCart(${i})'>Add</button>
+ </div>`).join('');
+ document.getElementById('menuList').innerHTML = html;
 }
 
-function renderCart() {
- let html="";
- cart.forEach((item,i)=>{
- html += `<div class='card'>${item.name} - ₹${item.price}
+function renderCart(){
+ const html = cart.map((item,i)=>`
+ <div class='card'>${item.name} - ₹${item.price}
  <button class='remove' onclick='removeFromCart(${i})'>Remove</button>
- </div>`;
- });
- document.getElementById("cartList").innerHTML = html;
+ </div>`).join('');
+ document.getElementById('cartList').innerHTML = html;
 }
 
-function renderHistory() {
- let html="";
- history.forEach(order=>{
- html += `<div class='card'>${order.map(i=>i.name).join(", ")}</div>`;
- });
- document.getElementById("historyList").innerHTML = html;
+function renderHistory(){
+ const html = history.map(order=>`
+ <div class='card'>${order.items.join(', ')} (ID:${order.id})</div>`).join('');
+ document.getElementById('historyList').innerHTML = html;
 }
 
-function saveState() {
+function saveState(){
  undoStack.push(JSON.stringify(cart));
- redoStack = [];
+ redoStack.length = 0;
 }
 
-function addToCart(i) {
+function addToCart(i){
  saveState();
  cart.push(canteens[currentCanteen][i]);
  renderCart();
 }
 
-function removeFromCart(i) {
+function removeFromCart(i){
  saveState();
  cart.splice(i,1);
  renderCart();
 }
 
-function placeOrder() {
- if(cart.length === 0) return alert("Cart empty");
- history.push([...cart]);
- cart = [];
+function placeOrder(){
+ if(cart.length===0){ alert('Cart empty'); return; }
+ const id = localStorage.getItem('id');
+ history.push({ items: cart.map(i=>i.name), id });
+ cart=[];
  renderCart();
  renderHistory();
 }
 
-function undo() {
- if(undoStack.length === 0) return;
+function undo(){
+ if(!undoStack.length) return;
  redoStack.push(JSON.stringify(cart));
  cart = JSON.parse(undoStack.pop());
  renderCart();
 }
 
-function redo() {
- if(redoStack.length === 0) return;
+function redo(){
+ if(!redoStack.length) return;
  undoStack.push(JSON.stringify(cart));
  cart = JSON.parse(redoStack.pop());
  renderCart();
 }
 
-function addItem() {
- let name = document.getElementById("itemName").value;
- let price = document.getElementById("itemPrice").value;
- if(!name || !price) return alert("Enter details");
- canteens[currentCanteen].push({name, price, img:"https://picsum.photos/80"});
+function addItem(){
+ const name = document.getElementById('itemName').value.trim();
+ const price = document.getElementById('itemPrice').value;
+ if(!name || !price){ alert('Enter details'); return; }
+ canteens[currentCanteen].push({name,price,img:'https://picsum.photos/80'});
  renderMenu();
 }
 
-loadCanteens();
-renderMenu();
-renderCart();
-renderHistory();
+// AUTO LOGIN
+if(localStorage.getItem('name')) initApp();
 </script>
 
 </body>
