@@ -1,113 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Canteen Pre-Order</title>
-
-<style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f4f6f8;
-    text-align: center;
-}
-
-h1 {
-    background: #2c3e50;
-    color: white;
-    padding: 15px;
-    margin: 0;
-}
-
-.login, .container {
-    margin-top: 80px;
-}
-
-.container {
-    display: none;
-}
-
-input, button {
-    padding: 10px;
-    margin: 8px;
-    border-radius: 5px;
-}
-
-button {
-    background: #27ae60;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #219150;
-}
-
-.menu {
-    margin: 20px;
-}
-
-.item {
-    background: white;
-    padding: 15px;
-    margin: 10px;
-    display: inline-block;
-    width: 200px;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-#cart {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    display: inline-block;
-}
-</style>
+    <title>Canteen Pre-Order</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div class="login" id="loginPage">
+<div id="loginPage">
     <h2>Login</h2>
-    <input type="text" id="name" placeholder="Enter your name"><br>
+    <input type="text" id="name" placeholder="Enter Name">
     <button onclick="login()">Login</button>
 </div>
 
-<!-- MAIN -->
-<div class="container" id="mainPage">
+<div id="mainPage" style="display:none;">
     <h1>Canteen Pre-Order</h1>
     <h2 id="welcome"></h2>
 
-    <div class="menu" id="menu"></div>
+    <div id="menu"></div>
 
     <div id="cart">
-        <h2>Your Cart</h2>
+        <h2>Cart</h2>
         <ul id="cartItems"></ul>
         <h3>Total: ₹<span id="total">0</span></h3>
-
-        <input type="time" id="time"><br>
+        <input type="time" id="time">
         <button onclick="placeOrder()">Place Order</button>
     </div>
 </div>
 
 <script>
-const API = "http://127.0.0.1:5000";
-
 let cart = [];
 
-/* ---------- LOGIN ---------- */
+/* LOGIN */
 async function login() {
-    const name = document.getElementById("name").value.trim();
+    const name = document.getElementById("name").value;
 
-    if (!name) {
-        alert("Enter name");
-        return;
-    }
-
-    const res = await fetch(API + "/login", {
+    const res = await fetch("/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name})
@@ -119,22 +47,21 @@ async function login() {
         document.getElementById("loginPage").style.display = "none";
         document.getElementById("mainPage").style.display = "block";
         document.getElementById("welcome").innerText = data.message;
-
         loadMenu();
     } else {
         alert(data.error);
     }
 }
 
-/* ---------- LOAD MENU ---------- */
+/* MENU */
 async function loadMenu() {
-    const res = await fetch(API + "/menu");
-    const menu = await res.json();
+    const res = await fetch("/menu");
+    const data = await res.json();
 
     const menuDiv = document.getElementById("menu");
     menuDiv.innerHTML = "";
 
-    menu.forEach(item => {
+    data.forEach(item => {
         menuDiv.innerHTML += `
             <div class="item">
                 <h3>${item.name}</h3>
@@ -147,32 +74,28 @@ async function loadMenu() {
     });
 }
 
-/* ---------- CART ---------- */
+/* CART */
 function addToCart(name, price) {
-    const existing = cart.find(i => i.name === name);
+    const item = cart.find(i => i.name === name);
 
-    if (existing) {
-        existing.qty++;
-    } else {
-        cart.push({name, price, qty: 1});
-    }
+    if (item) item.qty++;
+    else cart.push({name, price, qty: 1});
 
     displayCart();
 }
 
 function displayCart() {
+    let total = 0;
     const list = document.getElementById("cartItems");
     list.innerHTML = "";
 
-    let total = 0;
-
-    cart.forEach((item, index) => {
-        const itemTotal = item.price * item.qty;
+    cart.forEach((i, index) => {
+        const itemTotal = i.price * i.qty;
         total += itemTotal;
 
         list.innerHTML += `
             <li>
-                ${item.name} x ${item.qty} - ₹${itemTotal}
+                ${i.name} x ${i.qty} - ₹${itemTotal}
                 <button onclick="removeItem(${index})">X</button>
             </li>
         `;
@@ -186,36 +109,25 @@ function removeItem(index) {
     displayCart();
 }
 
-/* ---------- ORDER ---------- */
+/* ORDER */
 async function placeOrder() {
     const time = document.getElementById("time").value;
 
-    if (cart.length === 0) {
-        alert("Cart empty");
-        return;
-    }
+    if (cart.length === 0) return alert("Cart empty");
+    if (!time) return alert("Select time");
 
-    if (!time) {
-        alert("Select pickup time");
-        return;
-    }
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
-    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-
-    const res = await fetch(API + "/order", {
+    const res = await fetch("/order", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            items: cart,
-            total: total,
-            pickup_time: time
-        })
+        body: JSON.stringify({items: cart, total, pickup_time: time})
     });
 
     const data = await res.json();
 
     if (res.ok) {
-        alert("Order placed successfully!");
+        alert("Order placed!");
         cart = [];
         displayCart();
     } else {
