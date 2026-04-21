@@ -1,64 +1,147 @@
+// IMPORTS
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
+
+// MIDDLEWARE
 app.use(cors());
 app.use(express.json());
 
+// ================= DB =================
 mongoose.connect(process.env.MONGO_URI)
-.then(()=>console.log("DB Connected"));
+.then(()=>console.log("✅ MongoDB Connected"))
+.catch(err=>console.log(err));
 
-const User = mongoose.model("User",{name:String,userId:String});
-const Order = mongoose.model("Order",{
-orderId:String,
-userId:String,
-userName:String,
-canteen:String,
-items:Array,
-status:{type:String,default:"Pending"}
+// ================= MODELS =================
+
+// USER (same structure as frontend: id, name)
+const User = mongoose.model("User", new mongoose.Schema({
+name: String,
+id: { type: String, unique: true }
+}));
+
+// ORDER (same structure as frontend)
+const Order = mongoose.model("Order", new mongoose.Schema({
+orderId: String,
+user: {
+name: String,
+id: String
+},
+canteen: String,
+cart: Array,
+status: {
+type: String,
+default: "Pending"
+},
+createdAt: {
+type: Date,
+default: Date.now
+}
+}));
+
+// ================= ROUTES =================
+
+// TEST
+app.get("/", (req,res)=>{
+res.send("🍽️ Smart Canteen Backend Running");
 });
 
-app.get("/",(req,res)=>res.send("Backend Running"));
+// LOGIN (same as your frontend expects)
+app.post("/login", async (req,res)=>{
+try{
+const {name, id} = req.body;
 
-// LOGIN
-app.post("/login",async(req,res)=>{
-let {name,id}=req.body;
-let user=await User.findOne({userId:id});
+if(!name || !id){
+return res.status(400).json({error:"Missing data"});
+}
+
+// check if user exists
+let user = await User.findOne({id});
+
 if(!user){
-user=new User({name,userId:id});
+user = new User({name, id});
 await user.save();
 }
+
 res.json(user);
+
+}catch(err){
+res.status(500).json({error:"Server error"});
+}
 });
 
-// ORDER
-app.post("/order",async(req,res)=>{
-let {user,canteen,cart}=req.body;
+// PLACE ORDER
+app.post("/order", async (req,res)=>{
+try{
+const {user, canteen, cart} = req.body;
 
-let order=new Order({
-orderId:"ORD"+Date.now(),
-userId:user.userId,
-userName:user.name,
+if(!user || !canteen || !cart){
+return res.status(400).json({error:"Invalid data"});
+}
+
+const order = new Order({
+orderId: "ORD"+Date.now(),
+user,
 canteen,
-items:cart
+cart
 });
 
 await order.save();
-res.json({msg:"ok"});
+
+res.json({message:"Order placed"});
+
+}catch(err){
+res.status(500).json({error:"Order failed"});
+}
 });
 
-// HISTORY
-app.get("/orders/:id",async(req,res)=>{
-let data=await Order.find({userId:req.params.id});
-res.json(data);
+// GET USER HISTORY
+app.get("/orders/:id", async (req,res)=>{
+try{
+const orders = await Order.find({"user.id": req.params.id})
+.sort({createdAt:-1});
+
+res.json(orders);
+
+}catch(err){
+res.status(500).json({error:"Fetch failed"});
+}
 });
 
-// ADMIN
-app.get("/admin/orders",async(req,res)=>{
-let data=await Order.find();
-res.json(data);
+// ADMIN: ALL ORDERS
+app.get("/admin/orders", async (req,res)=>{
+try{
+const orders = await Order.find().sort({createdAt:-1});
+res.json(orders);
+
+}catch(err){
+res.status(500).json({error:"Admin fetch failed"});
+}
 });
 
-app.listen(process.env.PORT||5000);
+// UPDATE STATUS
+app.put("/order/:id", async (req,res)=>{
+try{
+const {status} = req.body;
+
+await Order.updateOne(
+{orderId:req.params.id},
+{status}
+);
+
+res.json({message:"Updated"});
+
+}catch(err){
+res.status(500).json({error:"Update failed"});
+}
+});
+
+// ================= SERVER =================
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, ()=>{
+console.log(`🚀 Server running on port ${PORT}`);
+});
