@@ -1,138 +1,247 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Canteen Pre-Order</title>
-    <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<title>Canteen Pro System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background: #eef2f7;
+}
+
+header {
+    background: #1f2937;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 15px;
+}
+
+.box {
+    flex: 1;
+    background: white;
+    margin: 10px;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+h2 { border-bottom: 1px solid #ddd; }
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
+
+button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.add { background: #2563eb; color: white; }
+.remove { background: red; color: white; }
+.order { background: green; color: white; width: 100%; padding: 10px; }
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+}
+
+.hidden { display: none; }
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+}
+</style>
+
 </head>
 
 <body>
 
-<div id="loginPage">
-    <h2>Login</h2>
-    <input type="text" id="name" placeholder="Enter Name">
-    <button onclick="login()">Login</button>
+<header>🍽️ Smart Canteen Pre-Order</header>
+
+<!-- LOGIN -->
+<div class="box" id="loginBox">
+    <h2>Student Login</h2>
+    <input type="text" id="studentName" placeholder="Enter Name">
+    <input type="text" id="studentId" placeholder="Enter Student ID">
+    <button class="add" onclick="login()">Login</button>
 </div>
 
-<div id="mainPage" style="display:none;">
-    <h1>Canteen Pre-Order</h1>
-    <h2 id="welcome"></h2>
+<!-- MAIN -->
+<div id="mainApp" class="hidden">
 
-    <div id="menu"></div>
+<div class="container">
 
-    <div id="cart">
-        <h2>Cart</h2>
-        <ul id="cartItems"></ul>
-        <h3>Total: ₹<span id="total">0</span></h3>
-        <input type="time" id="time">
-        <button onclick="placeOrder()">Place Order</button>
-    </div>
+<!-- MENU -->
+<div class="box">
+<h2>Menu</h2>
+
+<div class="item">Burger ₹50 <button class="add" onclick="add('Burger',50)">Add</button></div>
+<div class="item">Pizza ₹120 <button class="add" onclick="add('Pizza',120)">Add</button></div>
+<div class="item">Sandwich ₹40 <button class="add" onclick="add('Sandwich',40)">Add</button></div>
+<div class="item">Tea ₹10 <button class="add" onclick="add('Tea',10)">Add</button></div>
+
+</div>
+
+<!-- CART -->
+<div class="box">
+<h2>Cart</h2>
+<div id="cart"></div>
+<p>Total: ₹<span id="total">0</span></p>
+
+<select id="payment">
+<option>Cash</option>
+<option>UPI</option>
+</select>
+
+<select id="time">
+<option>10:30 AM</option>
+<option>11:30 AM</option>
+<option>12:30 PM</option>
+</select>
+
+<button class="order" onclick="placeOrder()">Place Order</button>
+</div>
+
+<!-- HISTORY -->
+<div class="box">
+<h2>Order History</h2>
+<div id="history"></div>
+</div>
+
+</div>
+
+<!-- ADMIN -->
+<div class="box">
+<h2>Admin Panel</h2>
+<button onclick="showOrders()">View All Orders</button>
+<div id="admin"></div>
+</div>
+
 </div>
 
 <script>
 let cart = [];
 
-/* LOGIN */
-async function login() {
-    const name = document.getElementById("name").value;
+function login() {
+    let name = document.getElementById("studentName").value;
+    let id = document.getElementById("studentId").value;
 
-    const res = await fetch("/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name})
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-        document.getElementById("loginPage").style.display = "none";
-        document.getElementById("mainPage").style.display = "block";
-        document.getElementById("welcome").innerText = data.message;
-        loadMenu();
-    } else {
-        alert(data.error);
+    if (!name || !id) {
+        alert("Enter details");
+        return;
     }
+
+    localStorage.setItem("user", JSON.stringify({name, id}));
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("mainApp").classList.remove("hidden");
+    loadHistory();
 }
 
-/* MENU */
-async function loadMenu() {
-    const res = await fetch("/menu");
-    const data = await res.json();
-
-    const menuDiv = document.getElementById("menu");
-    menuDiv.innerHTML = "";
-
-    data.forEach(item => {
-        menuDiv.innerHTML += `
-            <div class="item">
-                <h3>${item.name}</h3>
-                <p>₹${item.price}</p>
-                <button onclick="addToCart('${item.name}', ${item.price})">
-                    Add
-                </button>
-            </div>
-        `;
-    });
-}
-
-/* CART */
-function addToCart(name, price) {
-    const item = cart.find(i => i.name === name);
-
+function add(name, price) {
+    let item = cart.find(i => i.name === name);
     if (item) item.qty++;
-    else cart.push({name, price, qty: 1});
-
-    displayCart();
+    else cart.push({name, price, qty:1});
+    renderCart();
 }
 
-function displayCart() {
+function renderCart() {
+    let div = document.getElementById("cart");
+    div.innerHTML = "";
     let total = 0;
-    const list = document.getElementById("cartItems");
-    list.innerHTML = "";
 
-    cart.forEach((i, index) => {
-        const itemTotal = i.price * i.qty;
-        total += itemTotal;
-
-        list.innerHTML += `
-            <li>
-                ${i.name} x ${i.qty} - ₹${itemTotal}
-                <button onclick="removeItem(${index})">X</button>
-            </li>
-        `;
+    cart.forEach((i,index)=>{
+        total += i.price * i.qty;
+        div.innerHTML += `
+        <div class="cart-item">
+        ${i.name} x${i.qty}
+        <span>
+        <button onclick="changeQty(${index},1)">+</button>
+        <button onclick="changeQty(${index},-1)">-</button>
+        <button class="remove" onclick="removeItem(${index})">x</button>
+        </span>
+        </div>`;
     });
 
     document.getElementById("total").innerText = total;
 }
 
-function removeItem(index) {
-    cart.splice(index, 1);
-    displayCart();
+function changeQty(i,val){
+    cart[i].qty += val;
+    if(cart[i].qty <=0) cart.splice(i,1);
+    renderCart();
 }
 
-/* ORDER */
-async function placeOrder() {
-    const time = document.getElementById("time").value;
+function removeItem(i){
+    cart.splice(i,1);
+    renderCart();
+}
 
-    if (cart.length === 0) return alert("Cart empty");
-    if (!time) return alert("Select time");
-
-    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-
-    const res = await fetch("/order", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({items: cart, total, pickup_time: time})
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-        alert("Order placed!");
-        cart = [];
-        displayCart();
-    } else {
-        alert(data.error);
+function placeOrder(){
+    if(cart.length===0){
+        alert("Empty cart");
+        return;
     }
+
+    let user = JSON.parse(localStorage.getItem("user"));
+    let payment = document.getElementById("payment").value;
+    let time = document.getElementById("time").value;
+
+    let order = {
+        id: "ORD" + Date.now(),
+        user,
+        cart,
+        payment,
+        time
+    };
+
+    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+    orders.push(order);
+    localStorage.setItem("orders", JSON.stringify(orders));
+
+    alert("Order Placed! ID: " + order.id);
+
+    cart = [];
+    renderCart();
+    loadHistory();
+}
+
+function loadHistory(){
+    let user = JSON.parse(localStorage.getItem("user"));
+    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+
+    let historyDiv = document.getElementById("history");
+    historyDiv.innerHTML = "";
+
+    orders.filter(o=>o.user.id===user.id).forEach(o=>{
+        historyDiv.innerHTML += `
+        <p>Order: ${o.id} | ${o.time} | ${o.payment}</p>`;
+    });
+}
+
+function showOrders(){
+    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+    let div = document.getElementById("admin");
+    div.innerHTML = "";
+
+    orders.forEach(o=>{
+        div.innerHTML += `
+        <p>${o.id} - ${o.user.name} (${o.user.id})</p>`;
+    });
 }
 </script>
 
