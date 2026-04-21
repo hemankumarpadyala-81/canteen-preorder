@@ -5,25 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Canteen Preorder System</title>
 <style>
-:root {
-  --primary:#2c3e50;
-  --accent:#2980b9;
-  --success:#27ae60;
-  --danger:#e74c3c;
-}
-* { box-sizing:border-box; }
-body { margin:0; font-family:Segoe UI, Arial; background:#f4f6f9; }
-header { background:var(--primary); color:#fff; padding:15px; text-align:center; }
-.container { max-width:1000px; margin:auto; padding:20px; }
-.card { background:#fff; padding:12px; margin:10px 0; border-radius:10px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.08);} 
-img { width:60px; height:60px; border-radius:8px; object-fit:cover; margin-right:10px; }
-button { border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
-.add { background:var(--success); color:#fff; }
-.remove { background:var(--danger); color:#fff; }
-.primary { background:var(--accent); color:#fff; }
-input, select { padding:6px; margin:6px 0; width:100%; }
-.flex { display:flex; align-items:center; }
-#app { display:none; }
+:root { --primary:#2c3e50; --accent:#2980b9; --success:#27ae60; --danger:#e74c3c; }
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI;background:#f4f6f9}
+header{background:var(--primary);color:#fff;padding:15px;text-align:center}
+.container{max-width:1000px;margin:auto;padding:20px}
+.card{background:#fff;padding:12px;margin:10px 0;border-radius:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+img{width:60px;height:60px;border-radius:8px;margin-right:10px;object-fit:cover}
+.flex{display:flex;align-items:center}
+button{border:none;padding:6px 12px;border-radius:6px;cursor:pointer}
+.add{background:var(--success);color:#fff}
+.remove{background:var(--danger);color:#fff}
+.primary{background:var(--accent);color:#fff}
+.qty{display:flex;gap:5px;align-items:center}
+#app{display:none}
+.total{font-weight:bold;font-size:18px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -38,9 +34,7 @@ input, select { padding:6px; margin:6px 0; width:100%; }
 
 <!-- APP -->
 <div id="app">
-<header>
-<h2 id="welcome"></h2>
-</header>
+<header><h2 id="welcome"></h2></header>
 <div class="container">
 
 <h3>Select Canteen</h3>
@@ -50,6 +44,7 @@ input, select { padding:6px; margin:6px 0; width:100%; }
 
 <h3>Cart</h3>
 <div id="cartList"></div>
+<div class="total" id="totalBill">Total: ₹0</div>
 <button class="primary" onclick="placeOrder()">Place Order</button>
 <button onclick="undo()">Undo</button>
 <button onclick="redo()">Redo</button>
@@ -57,12 +52,7 @@ input, select { padding:6px; margin:6px 0; width:100%; }
 <h3>Order History</h3>
 <div id="historyList"></div>
 
-<h3>Admin Panel</h3>
-<input type="text" id="itemName" placeholder="Item Name">
-<input type="number" id="itemPrice" placeholder="Price">
-<button onclick="addItem()">Add Item</button>
-
-<button style="margin-top:10px" onclick="logout()">Logout</button>
+<button onclick="logout()">Logout</button>
 
 </div>
 </div>
@@ -70,153 +60,101 @@ input, select { padding:6px; margin:6px 0; width:100%; }
 <script>
 'use strict';
 
-// LOGIN
 function login(){
- const name = document.getElementById('username').value.trim();
- const id = document.getElementById('studentId').value.trim();
- if(!name || !id){ alert('Enter Name & ID'); return; }
- localStorage.setItem('name', name);
- localStorage.setItem('id', id);
+ const name=document.getElementById('username').value.trim();
+ const id=document.getElementById('studentId').value.trim();
+ if(!name||!id)return alert('Enter Name & ID');
+ localStorage.setItem('name',name);
+ localStorage.setItem('id',id);
  initApp();
 }
 
-function logout(){
- localStorage.clear();
- location.reload();
-}
+function logout(){localStorage.clear();location.reload();}
 
 function initApp(){
  document.getElementById('loginPage').style.display='none';
  document.getElementById('app').style.display='block';
- const name = localStorage.getItem('name');
- document.getElementById('welcome').innerText = 'Welcome, ' + name;
- loadCanteens();
- renderMenu();
- renderCart();
- renderHistory();
+ document.getElementById('welcome').innerText='Welcome, '+localStorage.getItem('name');
+ loadCanteens();renderMenu();renderCart();renderHistory();
 }
 
-// DATA
-const canteens = {
- "Ball":[
-  {name:"Burger",price:50,img:"https://picsum.photos/80?1"},
-  {name:"Fries",price:40,img:"https://picsum.photos/80?2"},
-  {name:"Tea",price:10,img:"https://picsum.photos/80?3"}
- ],
- "Pencil":[
-  {name:"Pizza",price:120,img:"https://picsum.photos/80?4"},
-  {name:"Coffee",price:20,img:"https://picsum.photos/80?5"},
-  {name:"Sandwich",price:60,img:"https://picsum.photos/80?6"}
- ],
- "KC":[
-  {name:"Dosa",price:30,img:"https://picsum.photos/80?7"},
-  {name:"Idli",price:25,img:"https://picsum.photos/80?8"},
-  {name:"Vada",price:20,img:"https://picsum.photos/80?9"}
- ],
- "3RD Campus":[
-  {name:"Noodles",price:60,img:"https://picsum.photos/80?10"},
-  {name:"Manchurian",price:70,img:"https://picsum.photos/80?11"}
- ],
- "Eat&Play":[
-  {name:"Ice Cream",price:50,img:"https://picsum.photos/80?12"},
-  {name:"Milkshake",price:70,img:"https://picsum.photos/80?13"}
- ]
+const canteens={
+ "Ball":[{name:"Burger",price:50,img:"https://source.unsplash.com/80x80/?burger"},{name:"Fries",price:40,img:"https://source.unsplash.com/80x80/?fries"},{name:"Tea",price:10,img:"https://source.unsplash.com/80x80/?tea"}],
+ "Pencil":[{name:"Pizza",price:120,img:"https://source.unsplash.com/80x80/?pizza"},{name:"Coffee",price:20,img:"https://source.unsplash.com/80x80/?coffee"},{name:"Sandwich",price:60,img:"https://source.unsplash.com/80x80/?sandwich"}],
+ "KC":[{name:"Dosa",price:30,img:"https://source.unsplash.com/80x80/?dosa"},{name:"Idli",price:25,img:"https://source.unsplash.com/80x80/?idli"},{name:"Vada",price:20,img:"https://source.unsplash.com/80x80/?vada"}],
+ "3RD Campus":[{name:"Noodles",price:60,img:"https://source.unsplash.com/80x80/?noodles"},{name:"Manchurian",price:70,img:"https://source.unsplash.com/80x80/?manchurian"}],
+ "Eat&Play":[{name:"Ice Cream",price:50,img:"https://source.unsplash.com/80x80/?icecream"},{name:"Milkshake",price:70,img:"https://source.unsplash.com/80x80/?milkshake"}]
 };
 
-let currentCanteen = 'Ball';
-let cart = [];
-let history = [];
-let undoStack = [];
-let redoStack = [];
+let currentCanteen='Ball';
+let cart=[];
+let history=[];
+let undoStack=[];
+let redoStack=[];
 
 function loadCanteens(){
- const select = document.getElementById('canteenSelect');
- select.innerHTML = Object.keys(canteens)
-  .map(c=>`<option value="${c}">${c}</option>`).join('');
+ document.getElementById('canteenSelect').innerHTML=Object.keys(canteens).map(c=>`<option>${c}</option>`).join('');
 }
 
-function switchCanteen(){
- currentCanteen = document.getElementById('canteenSelect').value;
- renderMenu();
-}
+function switchCanteen(){currentCanteen=document.getElementById('canteenSelect').value;renderMenu();}
 
 function renderMenu(){
- const menu = canteens[currentCanteen];
- const html = menu.map((item,i)=>`
+ const menu=canteens[currentCanteen];
+ document.getElementById('menuList').innerHTML=menu.map((item,i)=>`
  <div class='card'>
-   <div class='flex'>
-     <img src='${item.img}' onerror="this.src='https://picsum.photos/80'">
-     <div>${item.name}<br>₹${item.price}</div>
-   </div>
-   <button class='add' onclick='addToCart(${i})'>Add</button>
+  <div class='flex'><img src='${item.img}' onerror="this.src='https://picsum.photos/80'"><div>${item.name}<br>₹${item.price}</div></div>
+  <button class='add' onclick='addToCart(${i})'>Add</button>
  </div>`).join('');
- document.getElementById('menuList').innerHTML = html;
 }
 
 function renderCart(){
- const html = cart.map((item,i)=>`
- <div class='card'>${item.name} - ₹${item.price}
+ let total=0;
+ document.getElementById('cartList').innerHTML=cart.map((item,i)=>{
+ total+=item.price*item.qty;
+ return `<div class='card'>${item.name} x${item.qty} - ₹${item.price*item.qty}
+ <div class='qty'>
+ <button onclick='decrease(${i})'>-</button>
+ <button onclick='increase(${i})'>+</button>
  <button class='remove' onclick='removeFromCart(${i})'>Remove</button>
- </div>`).join('');
- document.getElementById('cartList').innerHTML = html;
+ </div>
+ </div>`;
+ }).join('');
+ document.getElementById('totalBill').innerText='Total: ₹'+total;
 }
 
-function renderHistory(){
- const html = history.map(order=>`
- <div class='card'>${order.items.join(', ')} (ID:${order.id})</div>`).join('');
- document.getElementById('historyList').innerHTML = html;
-}
-
-function saveState(){
- undoStack.push(JSON.stringify(cart));
- redoStack.length = 0;
-}
+function saveState(){undoStack.push(JSON.stringify(cart));redoStack=[];}
 
 function addToCart(i){
  saveState();
- cart.push(canteens[currentCanteen][i]);
+ let item=canteens[currentCanteen][i];
+ let found=cart.find(c=>c.name===item.name);
+ if(found)found.qty++; else cart.push({...item,qty:1});
  renderCart();
 }
 
-function removeFromCart(i){
- saveState();
- cart.splice(i,1);
- renderCart();
-}
+function increase(i){saveState();cart[i].qty++;renderCart();}
+function decrease(i){saveState();if(cart[i].qty>1)cart[i].qty--;else cart.splice(i,1);renderCart();}
+
+function removeFromCart(i){saveState();cart.splice(i,1);renderCart();}
 
 function placeOrder(){
- if(cart.length===0){ alert('Cart empty'); return; }
- const id = localStorage.getItem('id');
- history.push({ items: cart.map(i=>i.name), id });
- cart=[];
- renderCart();
- renderHistory();
+ if(!cart.length)return alert('Cart empty');
+ const id=localStorage.getItem('id');
+ const token=Math.floor(Math.random()*1000);
+ const time=new Date().toLocaleTimeString();
+ history.push({items:cart.map(i=>i.name+' x'+i.qty),id,token,time});
+ cart=[];renderCart();renderHistory();
 }
 
-function undo(){
- if(!undoStack.length) return;
- redoStack.push(JSON.stringify(cart));
- cart = JSON.parse(undoStack.pop());
- renderCart();
+function renderHistory(){
+ document.getElementById('historyList').innerHTML=history.map(o=>`
+ <div class='card'>Token:${o.token} | ${o.items.join(', ')}<br>ID:${o.id} | ${o.time}</div>`).join('');
 }
 
-function redo(){
- if(!redoStack.length) return;
- undoStack.push(JSON.stringify(cart));
- cart = JSON.parse(redoStack.pop());
- renderCart();
-}
+function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify(cart));cart=JSON.parse(undoStack.pop());renderCart();}
+function redo(){if(!redoStack.length)return;undoStack.push(JSON.stringify(cart));cart=JSON.parse(redoStack.pop());renderCart();}
 
-function addItem(){
- const name = document.getElementById('itemName').value.trim();
- const price = document.getElementById('itemPrice').value;
- if(!name || !price){ alert('Enter details'); return; }
- canteens[currentCanteen].push({name,price,img:'https://picsum.photos/80'});
- renderMenu();
-}
-
-// AUTO LOGIN
-if(localStorage.getItem('name')) initApp();
+if(localStorage.getItem('name'))initApp();
 </script>
 
 </body>
