@@ -1,124 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Canteen System</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#f3f4f6;}
-header{background:#111827;color:white;padding:15px;text-align:center;font-size:22px;}
-
-.box{background:white;margin:10px;padding:15px;border-radius:10px;}
-.hidden{display:none;}
-
-button{padding:6px 10px;border:none;border-radius:5px;background:#2563eb;color:white;cursor:pointer;}
-button.danger{background:red;}
-button.success{background:green;}
-
-.container{display:flex;flex-wrap:wrap;}
-.section{flex:1;min-width:280px;margin:10px;}
-
-.card{background:#fafafa;padding:10px;border-radius:10px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.card img{width:100%;height:90px;object-fit:cover;border-radius:8px;}
-
-.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
-
-.cart-item{display:flex;justify-content:space-between;margin:5px 0;}
-
-.topbar{display:flex;justify-content:space-between;align-items:center;}
-</style>
-</head>
-
-<body>
-
-<header>🍽️ Smart Canteen System</header>
-
-<!-- LOGIN -->
-<div id="loginBox" class="box">
-<h3>Login</h3>
-<input id="name" placeholder="Name"><br><br>
-<input id="id" placeholder="ID"><br><br>
-<button onclick="login()">Login</button>
-</div>
-
-<!-- CANTEEN -->
-<div id="canteenBox" class="box hidden">
-<h3>Select Canteen</h3>
-
-<div class="card" onclick="selectCanteen('BALL 1')">
-<img src="https://images.unsplash.com/photo-1601050690597-df0568f70950">
-<p>BALL 1</p>
-</div>
-
-<div class="card" onclick="selectCanteen('BALL 2')">
-<img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5">
-<p>BALL 2</p>
-</div>
-
-<div class="card" onclick="selectCanteen('PENCIL')">
-<img src="https://images.unsplash.com/photo-1550547660-d9450f859349">
-<p>PENCIL</p>
-</div>
-
-<div class="card" onclick="selectCanteen('KC CANTEEN')">
-<img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24">
-<p>KC CANTEEN</p>
-</div>
-
-<br>
-<button onclick="goBackLogin()">⬅ Back</button>
-</div>
-
-<!-- MAIN APP -->
-<div id="app" class="hidden">
-
-<div class="topbar box">
-<span id="welcome"></span>
-<div>
-<button onclick="goBackCanteen()">⬅ Back</button>
-<button class="danger" onclick="logout()">Logout</button>
-</div>
-</div>
-
-<div class="container">
-
-<!-- MENU -->
-<div class="section box">
-<h3>Menu</h3>
-<div id="menu"></div>
-</div>
-
-<!-- CART -->
-<div class="section box">
-<h3>Cart</h3>
-<div id="cart"></div>
-<p>Total: ₹<span id="total">0</span></p>
-<button class="success" onclick="placeOrder()">Place Order</button>
-</div>
-
-<!-- HISTORY -->
-<div class="section box">
-<h3>Order History</h3>
-<div id="history"></div>
-</div>
-
-</div>
-
-<!-- ADMIN -->
-<div class="box">
-<h3>Admin Panel</h3>
-<button onclick="showOrders()">View All Orders</button>
-<div id="admin"></div>
-</div>
-
-</div>
-
 <script>
+'use strict';
 
 let cart=[];
 
-// MENU DATA
+// MENU DATA (5 CANTEENS)
 const menus={
 "BALL 1":[
 ["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"],
@@ -134,14 +19,19 @@ const menus={
 ],
 "KC CANTEEN":[
 ["Dosa",40,"https://images.unsplash.com/photo-1612874742237-6526221588e3"]
+],
+"3RD CAMPUS":[
+["Noodles",60,"https://images.unsplash.com/photo-1585032226651-759b368d7246"],
+["Tea",10,"https://images.unsplash.com/photo-1509042239860-f550ce710b93"]
 ]
 };
 
 // LOGIN
 function login(){
-let name=document.getElementById("name").value;
-let id=document.getElementById("id").value;
-if(!name||!id)return alert("Enter details");
+let name=document.getElementById("name").value.trim();
+let id=document.getElementById("id").value.trim();
+
+if(!name||!id) return alert("Enter details");
 
 localStorage.setItem("user",JSON.stringify({name,id}));
 
@@ -149,12 +39,15 @@ loginBox.classList.add("hidden");
 canteenBox.classList.remove("hidden");
 }
 
-// CANTEEN NAV
+// SELECT CANTEEN
 function selectCanteen(c){
 localStorage.setItem("canteen",c);
 
 canteenBox.classList.add("hidden");
 app.classList.remove("hidden");
+
+cart=[]; // RESET CART (important)
+renderCart();
 
 let user=JSON.parse(localStorage.getItem("user"));
 welcome.innerText=`Welcome ${user.name} | ${c}`;
@@ -163,6 +56,7 @@ loadMenu(c);
 loadHistory();
 }
 
+// NAV
 function goBackLogin(){
 canteenBox.classList.add("hidden");
 loginBox.classList.remove("hidden");
@@ -180,6 +74,11 @@ function loadMenu(c){
 let menuDiv=document.getElementById("menu");
 menuDiv.innerHTML="";
 
+if(!menus[c]){
+menuDiv.innerHTML="<p>No menu available</p>";
+return;
+}
+
 menus[c].forEach(i=>{
 menuDiv.innerHTML+=`
 <div class="card">
@@ -193,8 +92,21 @@ menuDiv.innerHTML+=`
 // CART
 function addItem(n,p){
 let item=cart.find(i=>i.name===n);
-if(item)item.qty++;
+
+if(item) item.qty++;
 else cart.push({name:n,price:p,qty:1});
+
+renderCart();
+}
+
+function changeQty(index,val){
+cart[index].qty += val;
+if(cart[index].qty<=0) cart.splice(index,1);
+renderCart();
+}
+
+function removeItem(index){
+cart.splice(index,1);
 renderCart();
 }
 
@@ -203,11 +115,17 @@ let cartDiv=document.getElementById("cart");
 cartDiv.innerHTML="";
 let total=0;
 
-cart.forEach(i=>{
-total+=i.price*i.qty;
+cart.forEach((i,index)=>{
+total += i.price*i.qty;
+
 cartDiv.innerHTML+=`
 <div class="cart-item">
 ${i.name} x${i.qty}
+<span>
+<button onclick="changeQty(${index},1)">+</button>
+<button onclick="changeQty(${index},-1)">-</button>
+<button class="danger" onclick="removeItem(${index})">x</button>
+</span>
 </div>`;
 });
 
@@ -216,7 +134,7 @@ document.getElementById("total").innerText=total;
 
 // ORDER
 function placeOrder(){
-if(cart.length===0)return alert("Cart empty");
+if(cart.length===0) return alert("Cart empty");
 
 let user=JSON.parse(localStorage.getItem("user"));
 let canteen=localStorage.getItem("canteen");
@@ -227,8 +145,9 @@ orders.push({
 id:"ORD"+Date.now(),
 user,
 canteen,
-cart,
-status:"Pending"
+cart: JSON.parse(JSON.stringify(cart)), // SAFE COPY
+status:"Pending",
+time:new Date().toLocaleString()
 });
 
 localStorage.setItem("orders",JSON.stringify(orders));
@@ -248,24 +167,45 @@ let orders=JSON.parse(localStorage.getItem("orders")||"[]");
 history.innerHTML="";
 
 orders.filter(o=>o.user.id===user.id)
+.reverse()
 .forEach(o=>{
-history.innerHTML+=`${o.id} - ${o.status}<br>`;
+let items=o.cart.map(i=>`${i.name} x${i.qty}`).join(", ");
+
+history.innerHTML+=`
+<div class="card">
+<b>${o.id}</b> (${o.status})<br>
+${items}<br>
+<small>${o.time}</small>
+</div>`;
 });
 }
 
 // ADMIN
 function showOrders(){
 let user=JSON.parse(localStorage.getItem("user"));
-if(user.id!=="admin123")return alert("Access denied");
+
+if(user.id!=="admin123") return alert("Access denied");
 
 let orders=JSON.parse(localStorage.getItem("orders")||"[]");
 
 admin.innerHTML="";
 
-orders.forEach(o=>{
+orders.forEach((o,index)=>{
 admin.innerHTML+=`
-${o.id} - ${o.user.name} - ${o.canteen} - ${o.status}<br>`;
+<div class="card">
+${o.id} - ${o.user.name} - ${o.canteen}<br>
+Status: ${o.status}
+<br>
+<button onclick="markReady(${index})">Mark Ready</button>
+</div>`;
 });
+}
+
+function markReady(i){
+let orders=JSON.parse(localStorage.getItem("orders"));
+orders[i].status="Ready";
+localStorage.setItem("orders",JSON.stringify(orders));
+showOrders();
 }
 
 // LOGOUT
@@ -273,8 +213,4 @@ function logout(){
 localStorage.clear();
 location.reload();
 }
-
 </script>
-
-</body>
-</html>
