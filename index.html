@@ -8,12 +8,13 @@
 body { font-family: Arial; margin:0; background:#f4f6f9; }
 header { background:#2c3e50; color:white; padding:15px; text-align:center; }
 .container { padding:20px; }
-.menu, .cart, .history, .admin { margin-bottom:25px; }
-.card { background:white; padding:15px; margin:10px 0; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);} 
-button { padding:8px 12px; border:none; border-radius:5px; cursor:pointer; }
+.card { background:white; padding:12px; margin:10px 0; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);} 
+button { padding:6px 10px; border:none; border-radius:5px; cursor:pointer; }
 .add { background:#27ae60; color:white; }
 .remove { background:#e74c3c; color:white; }
 .primary { background:#2980b9; color:white; }
+select { padding:6px; margin-bottom:10px; }
+img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -23,52 +24,73 @@ button { padding:8px 12px; border:none; border-radius:5px; cursor:pointer; }
 
 <div class="container">
 
-<div class="menu">
-<h3>Menu</h3>
-<div id="menuList"></div>
-</div>
+<h3>Select Canteen</h3>
+<select id="canteenSelect" onchange="switchCanteen()"></select>
 
-<div class="cart">
+<div id="menuList"></div>
+
 <h3>Cart</h3>
 <div id="cartList"></div>
 <button class="primary" onclick="placeOrder()">Place Order</button>
 <button onclick="undo()">Undo</button>
 <button onclick="redo()">Redo</button>
-</div>
 
-<div class="history">
 <h3>Order History</h3>
 <div id="historyList"></div>
-</div>
 
-<div class="admin">
 <h3>Admin Panel</h3>
 <input type="text" id="itemName" placeholder="Item Name">
 <input type="number" id="itemPrice" placeholder="Price">
 <button onclick="addItem()">Add Item</button>
-</div>
 
 </div>
 
 <script>
-let menu = [
- {name:"Burger", price:50, img:"https://via.placeholder.com/100"},
- {name:"Pizza", price:120, img:"https://via.placeholder.com/100"},
- {name:"Tea", price:10, img:"https://via.placeholder.com/100"}
-];
+// 5 Canteens
+let canteens = {
+ "Ball": [
+  {name:"Burger", price:50, img:"https://picsum.photos/80?1"},
+  {name:"Tea", price:10, img:"https://picsum.photos/80?2"}
+ ],
+ "Pencil": [
+  {name:"Pizza", price:120, img:"https://picsum.photos/80?3"},
+  {name:"Coffee", price:20, img:"https://picsum.photos/80?4"}
+ ],
+ "KC": [
+  {name:"Sandwich", price:40, img:"https://picsum.photos/80?5"}
+ ],
+ "3RD Campus": [
+  {name:"Noodles", price:60, img:"https://picsum.photos/80?6"}
+ ],
+ "Eat&Play": [
+  {name:"Fried Rice", price:70, img:"https://picsum.photos/80?7"}
+ ]
+};
 
+let currentCanteen = "Ball";
 let cart = [];
 let history = [];
 let undoStack = [];
 let redoStack = [];
 
+function loadCanteens() {
+ let select = document.getElementById("canteenSelect");
+ select.innerHTML = Object.keys(canteens)
+  .map(c => `<option value="${c}">${c}</option>`).join("");
+}
+
+function switchCanteen() {
+ currentCanteen = document.getElementById("canteenSelect").value;
+ renderMenu();
+}
+
 function renderMenu() {
+ let menu = canteens[currentCanteen];
  let html="";
  menu.forEach((item,i)=>{
  html += `<div class='card'>
- <img src='${item.img}' width='80'>
- <h4>${item.name}</h4>
- <p>₹${item.price}</p>
+ <img src='${item.img}' onerror="this.src='https://picsum.photos/80'">
+ <b>${item.name}</b> - ₹${item.price}
  <button class='add' onclick='addToCart(${i})'>Add</button>
  </div>`;
  });
@@ -100,7 +122,7 @@ function saveState() {
 
 function addToCart(i) {
  saveState();
- cart.push(menu[i]);
+ cart.push(canteens[currentCanteen][i]);
  renderCart();
 }
 
@@ -136,10 +158,11 @@ function addItem() {
  let name = document.getElementById("itemName").value;
  let price = document.getElementById("itemPrice").value;
  if(!name || !price) return alert("Enter details");
- menu.push({name, price, img:"https://via.placeholder.com/100"});
+ canteens[currentCanteen].push({name, price, img:"https://picsum.photos/80"});
  renderMenu();
 }
 
+loadCanteens();
 renderMenu();
 renderCart();
 renderHistory();
