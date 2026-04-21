@@ -8,73 +8,64 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-body {
-    margin:0;
-    font-family: Arial, sans-serif;
-    background:#f3f4f6;
+body { margin:0; font-family:Arial; background:#f3f4f6;}
+header { background:#111827; color:#fff; padding:15px; text-align:center;}
+.container { display:flex; flex-wrap:wrap; padding:10px;}
+.box { background:#fff; margin:10px; padding:15px; border-radius:10px; flex:1; min-width:280px;}
+.hidden{display:none;}
+
+button{
+padding:6px 10px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+background:#2563eb;
+color:white;
 }
 
-header {
-    background:#111827;
-    color:#fff;
-    padding:15px;
-    text-align:center;
-    font-size:22px;
+button.danger{background:red;}
+button.success{background:green;}
+
+.menu-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+gap:10px;
 }
 
-.container {
-    display:flex;
-    flex-wrap:wrap;
-    padding:10px;
+.card{
+background:#fafafa;
+padding:10px;
+border-radius:8px;
+text-align:center;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
-.box {
-    background:#fff;
-    margin:10px;
-    padding:15px;
-    border-radius:10px;
-    flex:1;
-    min-width:280px;
+.card img{
+width:100%;
+height:90px;
+object-fit:cover;
+border-radius:8px;
 }
 
-.hidden { display:none; }
-
-button {
-    padding:6px 10px;
-    border:none;
-    border-radius:5px;
-    cursor:pointer;
-    background:#2563eb;
-    color:white;
+.cart-item{
+display:flex;
+justify-content:space-between;
 }
 
-button.danger { background:red; }
-button.success { background:green; }
-
-.menu-grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-    gap:10px;
+.canteen-card img{
+width:100%;
+height:100px;
+object-fit:cover;
+border-radius:10px;
 }
 
-.card {
-    padding:10px;
-    border-radius:8px;
-    background:#fafafa;
-    text-align:center;
-    box-shadow:0 2px 4px rgba(0,0,0,0.1);
-}
-
-.cart-item {
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:5px;
-}
-
-.topbar {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+.canteen-card{
+text-align:center;
+background:#fafafa;
+padding:10px;
+border-radius:10px;
+margin:10px 0;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 </style>
 </head>
@@ -91,25 +82,43 @@ button.success { background:green; }
 <button onclick="login()">Login</button>
 </div>
 
-<!-- CANTEEN SELECT -->
+<!-- CANTEEN -->
 <div id="canteenBox" class="box hidden">
 <h3>Select Canteen</h3>
-<button onclick="selectCanteen('BALL 1')">BALL 1</button>
-<button onclick="selectCanteen('BALL 2')">BALL 2</button>
-<button onclick="selectCanteen('PENCIL')">PENCIL</button>
-<button onclick="selectCanteen('KC CANTEEN')">KC CANTEEN</button>
-<button onclick="selectCanteen('3RD CAMPUS')">3RD CAMPUS</button>
+
+<div class="canteen-card" onclick="selectCanteen('BALL 1')">
+<img src="https://images.unsplash.com/photo-1601050690597-df0568f70950">
+<p>BALL 1</p>
 </div>
 
-<!-- MAIN -->
+<div class="canteen-card" onclick="selectCanteen('BALL 2')">
+<img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5">
+<p>BALL 2</p>
+</div>
+
+<div class="canteen-card" onclick="selectCanteen('PENCIL')">
+<img src="https://images.unsplash.com/photo-1559339352-11d035aa65de">
+<p>PENCIL</p>
+</div>
+
+<div class="canteen-card" onclick="selectCanteen('KC CANTEEN')">
+<img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24">
+<p>KC CANTEEN</p>
+</div>
+
+<div class="canteen-card" onclick="selectCanteen('3RD CAMPUS')">
+<img src="https://images.unsplash.com/photo-1604908176997-125f25cc500f">
+<p>3RD CAMPUS</p>
+</div>
+
+</div>
+
+<!-- MAIN APP -->
 <div id="app" class="hidden">
 
-<div class="topbar box">
-<span id="welcome"></span>
-<button onclick="logout()" class="danger">Logout</button>
+<div class="box">
+<p id="welcome"></p>
 </div>
-
-<div class="container">
 
 <!-- MENU -->
 <div class="box">
@@ -127,238 +136,134 @@ button.success { background:green; }
 
 <!-- QR -->
 <div class="box">
-<h3>Pickup QR</h3>
+<h3>QR</h3>
 <div id="qr"></div>
 </div>
 
 <!-- HISTORY -->
 <div class="box">
-<h3>Order History</h3>
+<h3>History</h3>
 <div id="history"></div>
-</div>
-
-</div>
-
-<!-- ADMIN -->
-<div class="box">
-<h3>Admin Panel</h3>
-<button onclick="showOrders()">View Orders</button>
-<div id="admin"></div>
 </div>
 
 </div>
 
 <script>
 
-// ---------- STATE ----------
-let cartItems = [];
+let cartItems=[];
 
-// ---------- MENUS ----------
-const menus = {
-"BALL 1": {
-    Snacks:[["Samosa",20],["Sandwich",40]],
-    Lunch:[["Biryani",120],["Fried Rice",100]],
-    Cooldrinks:[["Coke",20],["Juice",30]]
+// MENUS WITH IMAGES
+const menus={
+"BALL 1":{
+Snacks:[
+["Samosa",20,"https://images.unsplash.com/photo-1601050690597-df0568f70950"],
+["Sandwich",40,"https://images.unsplash.com/photo-1550507992-eb63ffee0847"]
+],
+Lunch:[
+["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"],
+["Fried Rice",100,"https://images.unsplash.com/photo-1603133872878-684f208fb84b"]
+]
 },
-"BALL 2": {
-    Snacks:[["Puffs",30]],
-    Lunch:[["Meals",80]],
-    Cooldrinks:[["Tea",10]]
-},
-"PENCIL": {
-    Snacks:[["Burger",50]],
-    Lunch:[["Biryani",120]],
-    Cooldrinks:[["Pepsi",20]]
-},
-"KC CANTEEN": {
-    Snacks:[["Dosa",40]],
-    Lunch:[["Rice",60]],
-    Cooldrinks:[["Coffee",15]]
-},
-"3RD CAMPUS": {
-    Snacks:[["Chips",20]],
-    Lunch:[["Fried Rice",100]],
-    Cooldrinks:[["Sprite",20]]
+"PENCIL":{
+Snacks:[
+["Burger",50,"https://images.unsplash.com/photo-1550547660-d9450f859349"]
+],
+Lunch:[
+["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"]
+]
 }
 };
 
-// ---------- LOGIN ----------
 function login(){
-    const name = document.getElementById("nameInput").value.trim();
-    const id = document.getElementById("idInput").value.trim();
+let name=document.getElementById("nameInput").value;
+let id=document.getElementById("idInput").value;
+if(!name||!id)return alert("Enter details");
 
-    if(!name || !id){
-        alert("Enter all details");
-        return;
-    }
+localStorage.setItem("user",JSON.stringify({name,id}));
 
-    localStorage.setItem("user", JSON.stringify({name,id}));
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("canteenBox").classList.remove("hidden");
+document.getElementById("loginBox").classList.add("hidden");
+document.getElementById("canteenBox").classList.remove("hidden");
 }
 
-// ---------- CANTEEN ----------
-function selectCanteen(canteen){
-    localStorage.setItem("canteen", canteen);
+function selectCanteen(c){
+localStorage.setItem("canteen",c);
 
-    document.getElementById("canteenBox").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
+document.getElementById("canteenBox").classList.add("hidden");
+document.getElementById("app").classList.remove("hidden");
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    document.getElementById("welcome").innerText =
-        `Welcome ${user.name} | ${canteen}`;
+let user=JSON.parse(localStorage.getItem("user"));
+document.getElementById("welcome").innerText=`Welcome ${user.name} | ${c}`;
 
-    loadMenu(canteen);
-    loadHistory();
+loadMenu(c);
 }
 
-// ---------- MENU ----------
-function loadMenu(canteen){
-    const menuDiv = document.getElementById("menu");
-    menuDiv.innerHTML = "";
+function loadMenu(c){
+let menuDiv=document.getElementById("menu");
+menuDiv.innerHTML="";
 
-    const data = menus[canteen];
+let data=menus[c];
+if(!data){menuDiv.innerHTML="No menu";return;}
 
-    for(let category in data){
-        menuDiv.innerHTML += `<h4>${category}</h4><div class="menu-grid">`;
+for(let cat in data){
+menuDiv.innerHTML+=`<h4>${cat}</h4><div class="menu-grid">`;
 
-        data[category].forEach(item=>{
-            menuDiv.innerHTML += `
-            <div class="card">
-                <p>${item[0]} ₹${item[1]}</p>
-                <button onclick="addItem('${item[0]}',${item[1]})">Add</button>
-            </div>`;
-        });
+data[cat].forEach(item=>{
+menuDiv.innerHTML+=`
+<div class="card">
+<img src="${item[2]}">
+<p>${item[0]} ₹${item[1]}</p>
+<button onclick="addItem('${item[0]}',${item[1]})">Add</button>
+</div>`;
+});
 
-        menuDiv.innerHTML += `</div>`;
-    }
+menuDiv.innerHTML+=`</div>`;
+}
 }
 
-// ---------- CART ----------
-function addItem(name,price){
-    let item = cartItems.find(i=>i.name===name);
-    if(item) item.qty++;
-    else cartItems.push({name,price,qty:1});
-    renderCart();
+function addItem(n,p){
+let item=cartItems.find(i=>i.name==n);
+if(item)item.qty++;
+else cartItems.push({name:n,price:p,qty:1});
+renderCart();
 }
 
 function renderCart(){
-    const cartDiv = document.getElementById("cart");
-    cartDiv.innerHTML = "";
+let cartDiv=document.getElementById("cart");
+cartDiv.innerHTML="";
+let t=0;
 
-    let total = 0;
+cartItems.forEach((i)=>{
+t+=i.price*i.qty;
+cartDiv.innerHTML+=`${i.name} x${i.qty}<br>`;
+});
 
-    cartItems.forEach((item,index)=>{
-        total += item.price * item.qty;
-
-        cartDiv.innerHTML += `
-        <div class="cart-item">
-            ${item.name} x${item.qty}
-            <span>
-                <button onclick="changeQty(${index},1)">+</button>
-                <button onclick="changeQty(${index},-1)">-</button>
-                <button class="danger" onclick="removeItem(${index})">x</button>
-            </span>
-        </div>`;
-    });
-
-    document.getElementById("total").innerText = total;
+document.getElementById("total").innerText=t;
 }
 
-function changeQty(index,val){
-    cartItems[index].qty += val;
-    if(cartItems[index].qty<=0) cartItems.splice(index,1);
-    renderCart();
-}
-
-function removeItem(index){
-    cartItems.splice(index,1);
-    renderCart();
-}
-
-// ---------- ORDER ----------
 function placeOrder(){
-    if(cartItems.length===0){
-        alert("Cart is empty");
-        return;
-    }
+if(cartItems.length==0)return alert("Empty");
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    const canteen = localStorage.getItem("canteen");
+let order={id:"ORD"+Date.now(),cart:cartItems,status:"Pending"};
 
-    const order = {
-        id: "ORD"+Date.now(),
-        user,
-        canteen,
-        cart: JSON.parse(JSON.stringify(cartItems)),
-        status:"Pending"
-    };
+let orders=JSON.parse(localStorage.getItem("orders")||"[]");
+orders.push(order);
+localStorage.setItem("orders",JSON.stringify(orders));
 
-    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    orders.push(order);
-    localStorage.setItem("orders", JSON.stringify(orders));
+qr.innerHTML="";
+new QRCode(qr,order.id);
 
-    generateQR(order.id);
-
-    cartItems = [];
-    renderCart();
-    loadHistory();
-
-    alert("Order placed successfully!");
+cartItems=[];
+renderCart();
+alert("Ordered!");
 }
 
-// ---------- QR ----------
-function generateQR(id){
-    const qrDiv = document.getElementById("qr");
-    qrDiv.innerHTML = "";
-    new QRCode(qrDiv, id);
-}
-
-// ---------- HISTORY ----------
 function loadHistory(){
-    const user = JSON.parse(localStorage.getItem("user"));
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
+let orders=JSON.parse(localStorage.getItem("orders")||"[]");
+history.innerHTML="";
 
-    const historyDiv = document.getElementById("history");
-    historyDiv.innerHTML = "";
-
-    orders
-    .filter(o=>o.user.id===user.id)
-    .forEach(o=>{
-        historyDiv.innerHTML += `${o.id} (${o.status})<br>`;
-    });
-}
-
-// ---------- ADMIN ----------
-function showOrders(){
-    const user = JSON.parse(localStorage.getItem("user"));
-    if(user.id !== "admin123"){
-        alert("Access denied");
-        return;
-    }
-
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    const adminDiv = document.getElementById("admin");
-    adminDiv.innerHTML = "";
-
-    orders.forEach((o,i)=>{
-        adminDiv.innerHTML += `
-        ${o.id} - ${o.user.name} - ${o.canteen} - ${o.status}
-        <button onclick="markReady(${i})">Ready</button><br>`;
-    });
-}
-
-function markReady(i){
-    let orders = JSON.parse(localStorage.getItem("orders"));
-    orders[i].status = "Ready";
-    localStorage.setItem("orders", JSON.stringify(orders));
-    showOrders();
-}
-
-// ---------- LOGOUT ----------
-function logout(){
-    localStorage.clear();
-    location.reload();
+orders.forEach(o=>{
+history.innerHTML+=`${o.id} (${o.status})<br>`;
+});
 }
 
 </script>
