@@ -1,342 +1,254 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Canteen System</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#f3f4f6;}
-header{background:#111827;color:#fff;padding:15px;text-align:center;font-size:22px;}
-
-.box{background:#fff;margin:10px;padding:15px;border-radius:10px;}
-.hidden{display:none;}
-
-button{
-padding:6px 10px;
-border:none;
-border-radius:5px;
-background:#2563eb;
-color:white;
-cursor:pointer;
-margin:2px;
-}
-
-button.danger{background:red;}
-button.success{background:green;}
-
-.container{display:flex;flex-wrap:wrap;}
-.section{flex:1;min-width:280px;margin:10px;}
-
-.card{
-background:#fafafa;
-padding:10px;
-border-radius:10px;
-text-align:center;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
-margin-bottom:10px;
-}
-
-.card img{
-width:100%;
-height:90px;
-object-fit:cover;
-border-radius:8px;
-}
-
-.menu-grid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-gap:10px;
-}
-
-.cart-item{
-display:flex;
-justify-content:space-between;
-margin:5px 0;
-}
-
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-</style>
-</head>
-
-<body>
-
-<header>🍽️ Smart Canteen System</header>
-
-<!-- LOGIN -->
-<div id="loginBox" class="box">
-<h3>Login</h3>
-<input id="name" placeholder="Name"><br><br>
-<input id="id" placeholder="ID"><br><br>
-<button onclick="login()">Login</button>
-</div>
-
-<!-- CANTEEN -->
-<div id="canteenBox" class="box hidden">
-<h3>Select Canteen</h3>
-
-<div class="card" onclick="selectCanteen('BALL 1')">
-<img src="https://source.unsplash.com/400x300/?canteen">
-<p>BALL 1</p>
-</div>
-
-<div class="card" onclick="selectCanteen('BALL 2')">
-<img src="https://source.unsplash.com/400x300/?food-court">
-<p>BALL 2</p>
-</div>
-
-<div class="card" onclick="selectCanteen('PENCIL')">
-<img src="https://source.unsplash.com/400x300/?cafeteria">
-<p>PENCIL</p>
-</div>
-
-<div class="card" onclick="selectCanteen('KC CANTEEN')">
-<img src="https://source.unsplash.com/400x300/?mess-food">
-<p>KC CANTEEN</p>
-</div>
-
-<br>
-<button onclick="goBackLogin()">⬅ Back</button>
-</div>
-
-<!-- MAIN -->
-<div id="app" class="hidden">
-
-<div class="topbar box">
-<span id="welcome"></span>
-<div>
-<button onclick="goBackCanteen()">⬅ Back</button>
-<button onclick="logout()" class="danger">Logout</button>
-</div>
-</div>
-
-<div class="container">
-
-<!-- MENU -->
-<div class="section box">
-<h3>Menu</h3>
-<div id="menu"></div>
-</div>
-
-<!-- CART -->
-<div class="section box">
-<h3>Cart</h3>
-
-<button onclick="undo()">Undo</button>
-<button onclick="redo()">Redo</button>
-
-<div id="cart"></div>
-<p>Total: ₹<span id="total">0</span></p>
-
-<button class="success" onclick="placeOrder()">Place Order</button>
-</div>
-
-<!-- HISTORY -->
-<div class="section box">
-<h3>Order History</h3>
-<div id="history"></div>
-</div>
-
-</div>
-
-<!-- ADMIN -->
-<div class="box">
-<h3>Admin Panel</h3>
-<button onclick="showOrders()">View Orders</button>
-<div id="admin"></div>
-</div>
-
-</div>
-
 <script>
 
-let cart=[];
-let undoStack=[];
-let redoStack=[];
-
-// SAFE DOM
-const loginBox=document.getElementById("loginBox");
-const canteenBox=document.getElementById("canteenBox");
-const app=document.getElementById("app");
-const welcome=document.getElementById("welcome");
-
-// MENU
-const menus={
-"BALL 1":[["Biryani",120],["Samosa",20],["Coke",20]],
-"BALL 2":[["Fried Rice",100],["Sandwich",40]],
-"PENCIL":[["Burger",50]],
-"KC CANTEEN":[["Dosa",40]]
+// ================= STATE =================
+const State = {
+    user: JSON.parse(localStorage.getItem("user")),
+    canteen: localStorage.getItem("canteen"),
+    cart: JSON.parse(localStorage.getItem("cart")) || [],
+    undo: [],
+    redo: []
 };
 
-// LOGIN
+// ================= UTIL =================
+const $ = (id) => document.getElementById(id);
+
+const Storage = {
+    saveCart() {
+        localStorage.setItem("cart", JSON.stringify(State.cart));
+    },
+    getOrders() {
+        return JSON.parse(localStorage.getItem("orders") || "[]");
+    },
+    saveOrders(data) {
+        localStorage.setItem("orders", JSON.stringify(data));
+    }
+};
+
+// ================= DATA =================
+const menus = {
+    "BALL 1":[
+        {name:"Biryani",price:120},
+        {name:"Samosa",price:20},
+        {name:"Coke",price:20}
+    ],
+    "BALL 2":[
+        {name:"Fried Rice",price:100},
+        {name:"Sandwich",price:40}
+    ],
+    "PENCIL":[
+        {name:"Burger",price:50}
+    ],
+    "KC CANTEEN":[
+        {name:"Dosa",price:40}
+    ]
+};
+
+// ================= AUTH =================
+const Auth = {
+    login(name,id){
+        const role = (id === "admin123") ? "admin" : "user";
+        State.user = {name,id,role};
+        localStorage.setItem("user", JSON.stringify(State.user));
+    },
+    logout(){
+        localStorage.clear();
+        location.reload();
+    }
+};
+
+// ================= CART =================
+const Cart = {
+
+    saveState(){
+        State.undo.push(JSON.stringify(State.cart));
+        State.redo = [];
+    },
+
+    add(item){
+        this.saveState();
+
+        const existing = State.cart.find(i=>i.name===item.name);
+        existing ? existing.qty++ : State.cart.push({...item, qty:1});
+
+        Storage.saveCart();
+        UI.renderCart();
+    },
+
+    undo(){
+        if(!State.undo.length) return;
+
+        State.redo.push(JSON.stringify(State.cart));
+        State.cart = JSON.parse(State.undo.pop());
+
+        Storage.saveCart();
+        UI.renderCart();
+    },
+
+    redo(){
+        if(!State.redo.length) return;
+
+        State.undo.push(JSON.stringify(State.cart));
+        State.cart = JSON.parse(State.redo.pop());
+
+        Storage.saveCart();
+        UI.renderCart();
+    },
+
+    clear(){
+        State.cart = [];
+        Storage.saveCart();
+        UI.renderCart();
+    },
+
+    total(){
+        return State.cart.reduce((sum,i)=>sum+i.price*i.qty,0);
+    }
+};
+
+// ================= ORDER =================
+const Order = {
+    place(){
+        if(State.cart.length===0) return alert("Cart empty");
+
+        const order = {
+            id:"ORD"+Date.now(),
+            user:State.user,
+            canteen:State.canteen,
+            cart: structuredClone(State.cart),
+            status:"Pending",
+            time:new Date().toLocaleString()
+        };
+
+        const orders = Storage.getOrders();
+        orders.push(order);
+        Storage.saveOrders(orders);
+
+        Cart.clear();
+        UI.renderHistory();
+
+        alert("Order placed!");
+    }
+};
+
+// ================= UI =================
+const UI = {
+
+    init(){
+        if(State.user && State.canteen){
+            $("loginBox").classList.add("hidden");
+            $("canteenBox").classList.add("hidden");
+            $("app").classList.remove("hidden");
+
+            $("welcome").innerText =
+                `Welcome ${State.user.name} | ${State.canteen}`;
+
+            this.renderMenu();
+            this.renderCart();
+            this.renderHistory();
+        }
+    },
+
+    renderMenu(){
+        const div = $("menu");
+        div.innerHTML = "";
+
+        const data = menus[State.canteen];
+        if(!data) return div.innerHTML="No menu";
+
+        data.forEach(item=>{
+            div.innerHTML += `
+            <div class="card">
+                <p>${item.name} ₹${item.price}</p>
+                <button onclick='Cart.add(${JSON.stringify(item)})'>
+                    Add
+                </button>
+            </div>`;
+        });
+    },
+
+    renderCart(){
+        const div = $("cart");
+        div.innerHTML = "";
+
+        State.cart.forEach(i=>{
+            div.innerHTML += `
+            <div class="cart-item">
+                ${i.name} x${i.qty}
+            </div>`;
+        });
+
+        $("total").innerText = Cart.total();
+    },
+
+    renderHistory(){
+        if(!State.user) return;
+
+        const orders = Storage.getOrders();
+        const div = $("history");
+        div.innerHTML = "";
+
+        orders
+        .filter(o=>o.user.id===State.user.id)
+        .reverse()
+        .forEach(o=>{
+            div.innerHTML += `
+            <b>${o.id}</b> - ${o.status}<br>
+            ${o.cart.map(i=>i.name+" x"+i.qty).join(", ")}
+            <hr>`;
+        });
+    },
+
+    renderAdmin(){
+        if(State.user.role!=="admin") return alert("Access denied");
+
+        const orders = Storage.getOrders();
+        const div = $("admin");
+        div.innerHTML = "";
+
+        orders.forEach(o=>{
+            div.innerHTML += `
+            ${o.id} - ${o.user.name} - ${o.canteen} - ${o.status}<br>`;
+        });
+    }
+};
+
+// ================= NAV =================
 function login(){
-let name=document.getElementById("name").value;
-let id=document.getElementById("id").value;
-if(!name||!id)return alert("Enter details");
+    const name=$("name").value.trim();
+    const id=$("id").value.trim();
 
-localStorage.setItem("user",JSON.stringify({name,id}));
+    if(!name||!id) return alert("Enter details");
 
-loginBox.classList.add("hidden");
-canteenBox.classList.remove("hidden");
+    Auth.login(name,id);
+    $("loginBox").classList.add("hidden");
+    $("canteenBox").classList.remove("hidden");
 }
 
-// NAV
+function selectCanteen(c){
+    State.canteen = c;
+    localStorage.setItem("canteen", c);
+    UI.init();
+}
+
 function goBackLogin(){
-canteenBox.classList.add("hidden");
-loginBox.classList.remove("hidden");
+    $("canteenBox").classList.add("hidden");
+    $("loginBox").classList.remove("hidden");
 }
 
 function goBackCanteen(){
-app.classList.add("hidden");
-canteenBox.classList.remove("hidden");
-cart=[];
-renderCart();
+    $("app").classList.add("hidden");
+    $("canteenBox").classList.remove("hidden");
 }
 
-// CANTEEN
-function selectCanteen(c){
-localStorage.setItem("canteen",c);
+// ================= EVENTS =================
+function addItem(n,p){ Cart.add({name:n,price:p}); }
+function undo(){ Cart.undo(); }
+function redo(){ Cart.redo(); }
+function placeOrder(){ Order.place(); }
+function showOrders(){ UI.renderAdmin(); }
+function logout(){ Auth.logout(); }
 
-canteenBox.classList.add("hidden");
-app.classList.remove("hidden");
-
-let user=JSON.parse(localStorage.getItem("user"));
-welcome.innerText=`Welcome ${user.name} | ${c}`;
-
-loadMenu(c);
-loadHistory();
-}
-
-// MENU
-function loadMenu(c){
-let menuDiv=document.getElementById("menu");
-menuDiv.innerHTML="";
-
-if(!menus[c]){menuDiv.innerHTML="No menu";return;}
-
-menus[c].forEach(i=>{
-menuDiv.innerHTML+=`
-<div class="card">
-<p>${i[0]} ₹${i[1]}</p>
-<button onclick="addItem('${i[0]}',${i[1]})">Add</button>
-</div>`;
-});
-}
-
-// UNDO REDO SAFE
-function saveState(){
-undoStack.push(JSON.stringify(cart));
-redoStack=[];
-}
-
-function addItem(n,p){
-saveState();
-let item=cart.find(i=>i.name===n);
-if(item)item.qty++;
-else cart.push({name:n,price:p,qty:1});
-renderCart();
-}
-
-function undo(){
-if(!undoStack.length)return;
-redoStack.push(JSON.stringify(cart));
-cart=JSON.parse(undoStack.pop());
-renderCart();
-}
-
-function redo(){
-if(!redoStack.length)return;
-undoStack.push(JSON.stringify(cart));
-cart=JSON.parse(redoStack.pop());
-renderCart();
-}
-
-// CART
-function renderCart(){
-let cartDiv=document.getElementById("cart");
-cartDiv.innerHTML="";
-let total=0;
-
-cart.forEach(i=>{
-total+=i.price*i.qty;
-cartDiv.innerHTML+=`
-<div class="cart-item">
-${i.name} x${i.qty}
-</div>`;
-});
-
-document.getElementById("total").innerText=total;
-}
-
-// ORDER
-function placeOrder(){
-if(!cart.length)return alert("Cart empty");
-
-let user=JSON.parse(localStorage.getItem("user"));
-let canteen=localStorage.getItem("canteen");
-
-let orders=JSON.parse(localStorage.getItem("orders")||"[]");
-
-orders.push({
-id:"ORD"+Date.now(),
-user,
-canteen,
-cart:JSON.parse(JSON.stringify(cart)),
-status:"Pending",
-time:new Date().toLocaleString()
-});
-
-localStorage.setItem("orders",JSON.stringify(orders));
-
-cart=[];
-renderCart();
-loadHistory();
-
-alert("Order placed!");
-}
-
-// HISTORY
-function loadHistory(){
-let user=JSON.parse(localStorage.getItem("user"));
-let orders=JSON.parse(localStorage.getItem("orders")||"[]");
-
-history.innerHTML="";
-
-orders.filter(o=>o.user.id===user.id)
-.reverse()
-.forEach(o=>{
-history.innerHTML+=`
-<b>${o.id}</b> - ${o.status}<br>
-${o.cart.map(i=>i.name+" x"+i.qty).join(", ")}<hr>`;
-});
-}
-
-// ADMIN
-function showOrders(){
-let user=JSON.parse(localStorage.getItem("user"));
-if(user.id!=="admin123")return alert("Access denied");
-
-let orders=JSON.parse(localStorage.getItem("orders")||"[]");
-
-admin.innerHTML="";
-
-orders.forEach(o=>{
-admin.innerHTML+=`${o.id} - ${o.user.name} - ${o.canteen} - ${o.status}<br>`;
-});
-}
-
-// LOGOUT
-function logout(){
-localStorage.clear();
-location.reload();
-}
+// ================= START =================
+window.onload = () => UI.init();
 
 </script>
-
-</body>
-</html>
