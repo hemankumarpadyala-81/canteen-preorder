@@ -1,211 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Canteen Pro</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f3f4f6;
+}
+
+header {
+    background:#111827;
+    color:#fff;
+    padding:15px;
+    text-align:center;
+    font-size:22px;
+}
+
+.container {
+    display:flex;
+    flex-wrap:wrap;
+    padding:10px;
+}
+
+.box {
+    background:#fff;
+    margin:10px;
+    padding:15px;
+    border-radius:10px;
+    flex:1;
+    min-width:280px;
+}
+
+.hidden { display:none; }
+
+button {
+    padding:6px 10px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+}
+
+button.danger { background:red; }
+button.success { background:green; }
+
+.menu-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+    gap:10px;
+}
+
+.card {
+    padding:10px;
+    border-radius:8px;
+    background:#fafafa;
+    text-align:center;
+    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cart-item {
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:5px;
+}
+
+.topbar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+</style>
+</head>
+
+<body>
+
+<header>🍽️ Smart Canteen Pro</header>
+
+<!-- LOGIN -->
+<div id="loginBox" class="box">
+<h3>Login</h3>
+<input id="nameInput" placeholder="Name"><br><br>
+<input id="idInput" placeholder="ID"><br><br>
+<button onclick="login()">Login</button>
+</div>
+
+<!-- CANTEEN SELECT -->
+<div id="canteenBox" class="box hidden">
+<h3>Select Canteen</h3>
+<button onclick="selectCanteen('BALL 1')">BALL 1</button>
+<button onclick="selectCanteen('BALL 2')">BALL 2</button>
+<button onclick="selectCanteen('PENCIL')">PENCIL</button>
+<button onclick="selectCanteen('KC CANTEEN')">KC CANTEEN</button>
+<button onclick="selectCanteen('3RD CAMPUS')">3RD CAMPUS</button>
+</div>
+
+<!-- MAIN -->
+<div id="app" class="hidden">
+
+<div class="topbar box">
+<span id="welcome"></span>
+<button onclick="logout()" class="danger">Logout</button>
+</div>
+
+<div class="container">
+
+<!-- MENU -->
+<div class="box">
+<h3>Menu</h3>
+<div id="menu"></div>
+</div>
+
+<!-- CART -->
+<div class="box">
+<h3>Cart</h3>
+<div id="cart"></div>
+<p>Total: ₹<span id="total">0</span></p>
+<button class="success" onclick="placeOrder()">Place Order</button>
+</div>
+
+<!-- QR -->
+<div class="box">
+<h3>Pickup QR</h3>
+<div id="qr"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="box">
+<h3>Order History</h3>
+<div id="history"></div>
+</div>
+
+</div>
+
+<!-- ADMIN -->
+<div class="box">
+<h3>Admin Panel</h3>
+<button onclick="showOrders()">View Orders</button>
+<div id="admin"></div>
+</div>
+
+</div>
+
 <script>
 
-// ================= STATE =================
-const State = {
-    cart: JSON.parse(localStorage.getItem("cart")) || [],
-    user: JSON.parse(localStorage.getItem("user"))
+// ---------- STATE ----------
+let cartItems = [];
+
+// ---------- MENUS ----------
+const menus = {
+"BALL 1": {
+    Snacks:[["Samosa",20],["Sandwich",40]],
+    Lunch:[["Biryani",120],["Fried Rice",100]],
+    Cooldrinks:[["Coke",20],["Juice",30]]
+},
+"BALL 2": {
+    Snacks:[["Puffs",30]],
+    Lunch:[["Meals",80]],
+    Cooldrinks:[["Tea",10]]
+},
+"PENCIL": {
+    Snacks:[["Burger",50]],
+    Lunch:[["Biryani",120]],
+    Cooldrinks:[["Pepsi",20]]
+},
+"KC CANTEEN": {
+    Snacks:[["Dosa",40]],
+    Lunch:[["Rice",60]],
+    Cooldrinks:[["Coffee",15]]
+},
+"3RD CAMPUS": {
+    Snacks:[["Chips",20]],
+    Lunch:[["Fried Rice",100]],
+    Cooldrinks:[["Sprite",20]]
+}
 };
 
-// ================= UTIL =================
-const $ = (id) => document.getElementById(id);
+// ---------- LOGIN ----------
+function login(){
+    const name = document.getElementById("nameInput").value.trim();
+    const id = document.getElementById("idInput").value.trim();
 
-const Storage = {
-    getOrders: () => JSON.parse(localStorage.getItem("orders") || "[]"),
-    saveOrders: (orders) => localStorage.setItem("orders", JSON.stringify(orders)),
-    saveCart: () => localStorage.setItem("cart", JSON.stringify(State.cart))
-};
-
-// ================= AUTH =================
-const Auth = {
-    login(name, id) {
-        const role = id === "admin123" ? "admin" : "user";
-        State.user = { name, id, role };
-        localStorage.setItem("user", JSON.stringify(State.user));
-    },
-
-    logout() {
-        localStorage.removeItem("user");
-        location.reload();
+    if(!name || !id){
+        alert("Enter all details");
+        return;
     }
-};
 
-// ================= CART =================
-const Cart = {
-    add(name, price) {
-        const item = State.cart.find(i => i.name === name);
-        item ? item.qty++ : State.cart.push({ name, price, qty: 1 });
-        Storage.saveCart();
-        UI.renderCart();
-    },
+    localStorage.setItem("user", JSON.stringify({name,id}));
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("canteenBox").classList.remove("hidden");
+}
 
-    update(index, change) {
-        State.cart[index].qty += change;
-        if (State.cart[index].qty <= 0) State.cart.splice(index, 1);
-        Storage.saveCart();
-        UI.renderCart();
-    },
+// ---------- CANTEEN ----------
+function selectCanteen(canteen){
+    localStorage.setItem("canteen", canteen);
 
-    remove(index) {
-        State.cart.splice(index, 1);
-        Storage.saveCart();
-        UI.renderCart();
-    },
+    document.getElementById("canteenBox").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
 
-    clear() {
-        State.cart = [];
-        Storage.saveCart();
-        UI.renderCart();
-    },
+    const user = JSON.parse(localStorage.getItem("user"));
+    document.getElementById("welcome").innerText =
+        `Welcome ${user.name} | ${canteen}`;
 
-    total() {
-        return State.cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    }
-};
+    loadMenu(canteen);
+    loadHistory();
+}
 
-// ================= ORDER =================
-const Order = {
-    place() {
-        if (State.cart.length === 0) return alert("Cart is empty");
+// ---------- MENU ----------
+function loadMenu(canteen){
+    const menuDiv = document.getElementById("menu");
+    menuDiv.innerHTML = "";
 
-        const payment = $("payment").value;
-        const time = $("time").value;
+    const data = menus[canteen];
 
-        if (!time) return alert("Select pickup time");
+    for(let category in data){
+        menuDiv.innerHTML += `<h4>${category}</h4><div class="menu-grid">`;
 
-        const order = {
-            id: "ORD" + Date.now(),
-            user: State.user,
-            cart: structuredClone(State.cart),
-            payment,
-            time,
-            status: "Pending",
-            createdAt: new Date().toLocaleString()
-        };
-
-        const orders = Storage.getOrders();
-        orders.push(order);
-        Storage.saveOrders(orders);
-
-        alert(`Order placed! ID: ${order.id}`);
-
-        Cart.clear();
-        UI.renderHistory();
-    }
-};
-
-// ================= UI =================
-const UI = {
-
-    init() {
-        if (State.user) {
-            $("loginBox").classList.add("hidden");
-            $("mainApp").classList.remove("hidden");
-            $("welcome").innerText = `Welcome ${State.user.name}`;
-            this.renderCart();
-            this.renderHistory();
-        }
-    },
-
-    renderCart() {
-        const cartDiv = $("cart");
-        cartDiv.innerHTML = "";
-
-        State.cart.forEach((item, i) => {
-            cartDiv.innerHTML += `
-            <div class="cart-item">
-                ${item.name} x${item.qty}
-                <span>
-                    <button onclick="Cart.update(${i},1)">+</button>
-                    <button onclick="Cart.update(${i},-1)">-</button>
-                    <button class="remove" onclick="Cart.remove(${i})">x</button>
-                </span>
+        data[category].forEach(item=>{
+            menuDiv.innerHTML += `
+            <div class="card">
+                <p>${item[0]} ₹${item[1]}</p>
+                <button onclick="addItem('${item[0]}',${item[1]})">Add</button>
             </div>`;
         });
 
-        $("total").innerText = Cart.total();
-    },
-
-    renderHistory() {
-        const historyDiv = $("history");
-        const orders = Storage.getOrders();
-
-        historyDiv.innerHTML = "";
-
-        orders
-            .filter(o => o.user.id === State.user.id)
-            .forEach(o => {
-                const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
-
-                historyDiv.innerHTML += `
-                <p>
-                    <b>${o.id}</b><br>
-                    ${items}<br>
-                    ${o.time} | ${o.payment} | ${o.status}
-                </p>`;
-            });
-    },
-
-    renderAdmin() {
-        if (State.user.role !== "admin") {
-            alert("Access denied");
-            return;
-        }
-
-        const adminDiv = $("admin");
-        const orders = Storage.getOrders();
-
-        adminDiv.innerHTML = "";
-
-        orders.forEach(o => {
-            const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
-
-            adminDiv.innerHTML += `
-            <p>
-                <b>${o.id}</b><br>
-                ${o.user.name} (${o.user.id})<br>
-                ${items}<br>
-                ${o.time} | ${o.payment}
-            </p>`;
-        });
+        menuDiv.innerHTML += `</div>`;
     }
-};
-
-// ================= EVENTS =================
-function login() {
-    const name = $("studentName").value.trim();
-    const id = $("studentId").value.trim();
-
-    if (!name || !id) return alert("Enter valid details");
-
-    Auth.login(name, id);
-    UI.init();
 }
 
-function logout() {
-    Auth.logout();
+// ---------- CART ----------
+function addItem(name,price){
+    let item = cartItems.find(i=>i.name===name);
+    if(item) item.qty++;
+    else cartItems.push({name,price,qty:1});
+    renderCart();
 }
 
-function add(name, price) {
-    Cart.add(name, price);
+function renderCart(){
+    const cartDiv = document.getElementById("cart");
+    cartDiv.innerHTML = "";
+
+    let total = 0;
+
+    cartItems.forEach((item,index)=>{
+        total += item.price * item.qty;
+
+        cartDiv.innerHTML += `
+        <div class="cart-item">
+            ${item.name} x${item.qty}
+            <span>
+                <button onclick="changeQty(${index},1)">+</button>
+                <button onclick="changeQty(${index},-1)">-</button>
+                <button class="danger" onclick="removeItem(${index})">x</button>
+            </span>
+        </div>`;
+    });
+
+    document.getElementById("total").innerText = total;
 }
 
-function changeQty(i, val) {
-    Cart.update(i, val);
+function changeQty(index,val){
+    cartItems[index].qty += val;
+    if(cartItems[index].qty<=0) cartItems.splice(index,1);
+    renderCart();
 }
 
-function removeItem(i) {
-    Cart.remove(i);
+function removeItem(index){
+    cartItems.splice(index,1);
+    renderCart();
 }
 
-function placeOrder() {
-    Order.place();
+// ---------- ORDER ----------
+function placeOrder(){
+    if(cartItems.length===0){
+        alert("Cart is empty");
+        return;
+    }
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const canteen = localStorage.getItem("canteen");
+
+    const order = {
+        id: "ORD"+Date.now(),
+        user,
+        canteen,
+        cart: JSON.parse(JSON.stringify(cartItems)),
+        status:"Pending"
+    };
+
+    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+    orders.push(order);
+    localStorage.setItem("orders", JSON.stringify(orders));
+
+    generateQR(order.id);
+
+    cartItems = [];
+    renderCart();
+    loadHistory();
+
+    alert("Order placed successfully!");
 }
 
-function showOrders() {
-    UI.renderAdmin();
+// ---------- QR ----------
+function generateQR(id){
+    const qrDiv = document.getElementById("qr");
+    qrDiv.innerHTML = "";
+    new QRCode(qrDiv, id);
 }
 
-// ================= START =================
-window.onload = () => UI.init();
+// ---------- HISTORY ----------
+function loadHistory(){
+    const user = JSON.parse(localStorage.getItem("user"));
+    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
+
+    const historyDiv = document.getElementById("history");
+    historyDiv.innerHTML = "";
+
+    orders
+    .filter(o=>o.user.id===user.id)
+    .forEach(o=>{
+        historyDiv.innerHTML += `${o.id} (${o.status})<br>`;
+    });
+}
+
+// ---------- ADMIN ----------
+function showOrders(){
+    const user = JSON.parse(localStorage.getItem("user"));
+    if(user.id !== "admin123"){
+        alert("Access denied");
+        return;
+    }
+
+    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
+    const adminDiv = document.getElementById("admin");
+    adminDiv.innerHTML = "";
+
+    orders.forEach((o,i)=>{
+        adminDiv.innerHTML += `
+        ${o.id} - ${o.user.name} - ${o.canteen} - ${o.status}
+        <button onclick="markReady(${i})">Ready</button><br>`;
+    });
+}
+
+function markReady(i){
+    let orders = JSON.parse(localStorage.getItem("orders"));
+    orders[i].status = "Ready";
+    localStorage.setItem("orders", JSON.stringify(orders));
+    showOrders();
+}
+
+// ---------- LOGOUT ----------
+function logout(){
+    localStorage.clear();
+    location.reload();
+}
 
 </script>
+
+</body>
+</html>
