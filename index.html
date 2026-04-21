@@ -1,31 +1,40 @@
-<script>
+// ===============================
+// SMART CANTEEN PRO - IMPROVED
+// ===============================
 
 let cart = [];
 
-/* ---------- INIT ---------- */
+// ---------- INIT ----------
 window.onload = () => {
     const user = getUser();
-    if (user) initApp();
+    if (user) {
+        initApp();
+        loadCart();
+    }
 };
 
-/* ---------- HELPERS ---------- */
-function getEl(id) {
-    return document.getElementById(id);
-}
+// ---------- HELPERS ----------
+const getEl = (id) => document.getElementById(id);
 
-function getUser() {
-    return JSON.parse(localStorage.getItem("user"));
-}
+const getUser = () => JSON.parse(localStorage.getItem("user"));
 
-function getOrders() {
-    return JSON.parse(localStorage.getItem("orders") || "[]");
-}
+const getOrders = () => JSON.parse(localStorage.getItem("orders") || "[]");
 
-function saveOrders(data) {
+const saveOrders = (data) => {
+    if (data.length > 100) data.shift(); // limit storage
     localStorage.setItem("orders", JSON.stringify(data));
-}
+};
 
-/* ---------- LOGIN ---------- */
+const saveCart = () => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+};
+
+const loadCart = () => {
+    cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    renderCart();
+};
+
+// ---------- LOGIN ----------
 function login() {
     const name = getEl("studentName").value.trim();
     const id = getEl("studentId").value.trim();
@@ -35,13 +44,18 @@ function login() {
         return;
     }
 
-    const role = (id === "admin123") ? "admin" : "user";
+    let role = "user";
+
+    // Basic secure check (replace with backend in real app)
+    if (id === "admin123" && name.toLowerCase() === "admin") {
+        role = "admin";
+    }
 
     localStorage.setItem("user", JSON.stringify({ name, id, role }));
     initApp();
 }
 
-/* ---------- INIT APP ---------- */
+// ---------- INIT APP ----------
 function initApp() {
     const user = getUser();
 
@@ -52,19 +66,20 @@ function initApp() {
     loadHistory();
 }
 
-/* ---------- LOGOUT ---------- */
+// ---------- LOGOUT ----------
 function logout() {
-    localStorage.removeItem("user");
+    localStorage.clear();
     location.reload();
 }
 
-/* ---------- CART ---------- */
+// ---------- CART ----------
 function add(name, price) {
     const item = cart.find(i => i.name === name);
 
     if (item) item.qty++;
     else cart.push({ name, price, qty: 1 });
 
+    saveCart();
     renderCart();
 }
 
@@ -72,13 +87,13 @@ function renderCart() {
     const cartDiv = getEl("cart");
     const totalEl = getEl("total");
 
-    cartDiv.innerHTML = "";
+    let html = "";
     let total = 0;
 
     cart.forEach((i, index) => {
         total += i.price * i.qty;
 
-        cartDiv.innerHTML += `
+        html += `
         <div class="cart-item">
             ${i.name} x${i.qty}
             <span>
@@ -89,25 +104,30 @@ function renderCart() {
         </div>`;
     });
 
+    cartDiv.innerHTML = html || "<p>Cart is empty</p>";
     totalEl.innerText = total;
 }
 
 function updateQty(index, change) {
+    if (!cart[index]) return;
+
     cart[index].qty += change;
 
     if (cart[index].qty <= 0) {
         cart.splice(index, 1);
     }
 
+    saveCart();
     renderCart();
 }
 
 function removeItem(index) {
     cart.splice(index, 1);
+    saveCart();
     renderCart();
 }
 
-/* ---------- ORDER ---------- */
+// ---------- ORDER ----------
 function placeOrder() {
     if (cart.length === 0) {
         alert("Cart is empty");
@@ -123,13 +143,17 @@ function placeOrder() {
         return;
     }
 
+    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+
     const order = {
         id: "ORD" + Date.now(),
         user,
         cart: structuredClone(cart),
         payment,
         time,
-        status: "Pending"
+        total,
+        status: "Pending",
+        createdAt: new Date().toISOString()
     };
 
     const orders = getOrders();
@@ -139,11 +163,12 @@ function placeOrder() {
     alert(`Order placed! ID: ${order.id}`);
 
     cart = [];
+    saveCart();
     renderCart();
     loadHistory();
 }
 
-/* ---------- HISTORY ---------- */
+// ---------- HISTORY ----------
 function loadHistory() {
     const user = getUser();
     const orders = getOrders();
@@ -151,21 +176,28 @@ function loadHistory() {
     const historyDiv = getEl("history");
     historyDiv.innerHTML = "";
 
-    orders
-        .filter(o => o.user.id === user.id)
-        .forEach(o => {
-            const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
+    const userOrders = orders.filter(o => o.user.id === user.id);
 
-            historyDiv.innerHTML += `
-            <p>
-                <b>${o.id}</b><br>
-                ${items}<br>
-                ${o.time} | ${o.payment} | ${o.status}
-            </p>`;
-        });
+    if (userOrders.length === 0) {
+        historyDiv.innerHTML = "<p>No orders yet</p>";
+        return;
+    }
+
+    userOrders.forEach(o => {
+        const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
+
+        historyDiv.innerHTML += `
+        <div class="order-card">
+            <b>${o.id}</b><br>
+            ${items}<br>
+            ₹${o.total}<br>
+            ${o.time} | ${o.payment}<br>
+            <span class="status">${o.status}</span>
+        </div>`;
+    });
 }
 
-/* ---------- ADMIN ---------- */
+// ---------- ADMIN ----------
 function showOrders() {
     const user = getUser();
 
@@ -183,13 +215,29 @@ function showOrders() {
         const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
 
         adminDiv.innerHTML += `
-        <p>
+        <div class="order-card">
             <b>${o.id}</b><br>
             ${o.user.name} (${o.user.id})<br>
             ${items}<br>
-            ${o.time} | ${o.payment} | ${o.status}
-        </p>`;
+            ₹${o.total}<br>
+            ${o.time} | ${o.payment}<br>
+            <b>${o.status}</b><br>
+            <button onclick="updateStatus('${o.id}','Preparing')">Preparing</button>
+            <button onclick="updateStatus('${o.id}','Ready')">Ready</button>
+            <button onclick="updateStatus('${o.id}','Completed')">Done</button>
+        </div>`;
     });
 }
 
-</script>
+function updateStatus(orderId, status) {
+    const orders = getOrders();
+    const order = orders.find(o => o.id === orderId);
+
+    if (!order) return;
+
+    order.status = status;
+    saveOrders(orders);
+
+    showOrders();
+    loadHistory();
+}
