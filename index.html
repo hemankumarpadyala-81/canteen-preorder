@@ -2,307 +2,368 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>Smart Canteen Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Canteen System</title>
 
 <style>
-body { font-family: Arial; margin:0; background:#f4f6f9; }
-header { background:#2c3e50; color:#fff; padding:15px; text-align:center; }
-.container { max-width:900px; margin:auto; padding:20px; }
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f3f4f6;
+}
+
+header {
+    background: #111827;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+}
+
+.box {
+    flex: 1;
+    background: white;
+    margin: 10px;
+    padding: 15px;
+    border-radius: 10px;
+    min-width: 300px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+    gap: 10px;
+}
 
 .card {
-    background:#fff;
-    padding:12px;
-    margin:10px 0;
-    border-radius:8px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
 }
 
 button {
-    padding:6px 10px;
-    border:none;
-    border-radius:5px;
-    background:#2980b9;
-    color:#fff;
-    cursor:pointer;
+    margin-top: 5px;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-button:disabled { opacity:0.5; cursor:not-allowed; }
+.add { background: #2563eb; color: white; }
+.remove { background: red; color: white; }
+.order { background: green; color: white; width: 100%; margin-top: 10px; }
 
-input, select {
-    width:100%;
-    padding:8px;
-    margin:6px 0;
+.hidden { display: none; }
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
 }
 
-.hidden { display:none; }
-.empty { color:#888; text-align:center; }
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category {
+    margin-top: 15px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginPage" class="container">
+<header>🍽️ Smart Canteen System</header>
+
+<div class="box" id="loginBox">
 <h2>Login</h2>
-<input id="name" placeholder="Name">
-<input id="id" placeholder="ID">
-<button id="loginBtn">Login</button>
+<input type="text" id="studentName" placeholder="Enter Name">
+<input type="text" id="studentId" placeholder="Enter ID">
+<button class="add" onclick="login()">Login</button>
 </div>
 
-<!-- APP -->
-<div id="app" class="hidden">
-<header><h2 id="welcome"></h2></header>
+<div id="mainApp" class="hidden">
+
+<div class="topbar">
+<p id="welcome"></p>
+<button onclick="logout()">Logout</button>
+</div>
 
 <div class="container">
 
-<select id="canteen"></select>
+<!-- MENU -->
+<div class="box">
+<h2>Menu</h2>
 
-<h3>Menu</h3>
-<div id="menu"></div>
+<!-- MAIN COURSE -->
+<div class="category">
+<h3>Main Course</h3>
+<div class="menu-grid">
 
-<h3>Cart</h3>
-<div id="cart"></div>
-<p id="total">Total: ₹0</p>
-<button id="orderBtn">Place Order</button>
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?biryani">
+<p>Biryani ₹120</p>
+<button class="add" onclick="add('Biryani',120)">Add</button>
+</div>
 
-<h3>Order History</h3>
-<div id="history"></div>
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?pizza">
+<p>Pizza ₹120</p>
+<button class="add" onclick="add('Pizza',120)">Add</button>
+</div>
 
-<button id="logoutBtn">Logout</button>
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?burger">
+<p>Burger ₹50</p>
+<button class="add" onclick="add('Burger',50)">Add</button>
+</div>
 
 </div>
+</div>
+
+<!-- SNACKS -->
+<div class="category">
+<h3>Snacks</h3>
+<div class="menu-grid">
+
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?puff">
+<p>Puffs ₹30</p>
+<button class="add" onclick="add('Puffs',30)">Add</button>
+</div>
+
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?sandwich">
+<p>Sandwich ₹40</p>
+<button class="add" onclick="add('Sandwich',40)">Add</button>
+</div>
+
+</div>
+</div>
+
+<!-- BEVERAGES -->
+<div class="category">
+<h3>Beverages</h3>
+<div class="menu-grid">
+
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?milkshake">
+<p>Milkshake ₹80</p>
+<button class="add" onclick="add('Milkshake',80)">Add</button>
+</div>
+
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?cold-drink">
+<p>Cold Drink ₹20</p>
+<button class="add" onclick="add('Cold Drink',20)">Add</button>
+</div>
+
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?tea">
+<p>Tea ₹10</p>
+<button class="add" onclick="add('Tea',10)">Add</button>
+</div>
+
+</div>
+</div>
+
+<!-- DESSERTS -->
+<div class="category">
+<h3>Desserts</h3>
+<div class="menu-grid">
+
+<div class="card">
+<img src="https://source.unsplash.com/200x200/?chocolate">
+<p>Chocolate ₹25</p>
+<button class="add" onclick="add('Chocolate',25)">Add</button>
+</div>
+
+</div>
+</div>
+
+</div>
+
+<!-- CART -->
+<div class="box">
+<h2>Cart</h2>
+<div id="cart"></div>
+<p>Total: ₹<span id="total">0</span></p>
+
+<select id="payment">
+<option>Cash</option>
+<option>UPI</option>
+</select>
+
+<select id="time">
+<option>09:00 AM</option>
+<option>10:00 AM</option>
+<option>11:00 AM</option>
+<option>12:00 PM</option>
+<option>01:00 PM</option>
+<option>02:00 PM</option>
+<option>03:00 PM</option>
+<option>04:00 PM</option>
+<option>05:00 PM</option>
+</select>
+
+<button class="order" onclick="placeOrder()">Place Order</button>
+</div>
+
+<!-- HISTORY -->
+<div class="box">
+<h2>Order History</h2>
+<div id="history"></div>
+</div>
+
+</div>
+
+<!-- ADMIN -->
+<div class="box">
+<h2>Admin Panel</h2>
+<button onclick="showOrders()">View All Orders</button>
+<div id="admin"></div>
+</div>
+
 </div>
 
 <script>
-'use strict';
 
-// ---------- STATE ----------
 let cart = [];
-let currentUser = null;
 
-// ---------- DATA ----------
-const menus = {
-    Ball: [
-        {name:"Burger", price:50},
-        {name:"Fries", price:40}
-    ],
-    Pencil: [
-        {name:"Pizza", price:120},
-        {name:"Coffee", price:20}
-    ],
-    KC: [
-        {name:"Dosa", price:30}
-    ]
-};
+function login(){
+    let name = studentName.value;
+    let id = studentId.value;
 
-// ---------- DOM ----------
-const loginPage = document.getElementById("loginPage");
-const app = document.getElementById("app");
-const welcome = document.getElementById("welcome");
-const menuDiv = document.getElementById("menu");
-const cartDiv = document.getElementById("cart");
-const historyDiv = document.getElementById("history");
-const totalDiv = document.getElementById("total");
-const canteenSelect = document.getElementById("canteen");
+    if(!name || !id){ alert("Enter details"); return; }
 
-// ---------- INIT ----------
-function init(){
-    loadCanteens();
-
-    document.getElementById("loginBtn").onclick = login;
-    document.getElementById("logoutBtn").onclick = logout;
-    document.getElementById("orderBtn").onclick = placeOrder;
-    canteenSelect.onchange = renderMenu;
-
-    autoLogin();
+    localStorage.setItem("user", JSON.stringify({name,id}));
+    initApp();
 }
 
-// ---------- LOGIN ----------
-async function login(){
-    const name = document.getElementById("name").value.trim();
-    const id = document.getElementById("id").value.trim();
-
-    if(!name || !id) return alert("Enter details");
-
-    currentUser = {name, id};
-    localStorage.setItem("user", JSON.stringify(currentUser));
-
-    try {
-        await fetch("/login", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify(currentUser)
-        });
-    } catch {}
-
-    showApp();
-}
-
-function autoLogin(){
-    const user = localStorage.getItem("user");
-    if(user){
-        currentUser = JSON.parse(user);
-        showApp();
-    }
-}
-
-function showApp(){
-    loginPage.classList.add("hidden");
-    app.classList.remove("hidden");
-    welcome.innerText = `Welcome ${currentUser.name}`;
-    renderMenu();
+function initApp(){
+    let user = JSON.parse(localStorage.getItem("user"));
+    loginBox.classList.add("hidden");
+    mainApp.classList.remove("hidden");
+    welcome.innerText = "Welcome " + user.name;
     loadHistory();
 }
 
 function logout(){
-    localStorage.clear();
+    localStorage.removeItem("user");
     location.reload();
 }
 
-// ---------- CANTEEN ----------
-function loadCanteens(){
-    canteenSelect.innerHTML = Object.keys(menus)
-        .map(c => `<option value="${c}">${c}</option>`)
-        .join("");
-}
-
-// ---------- MENU ----------
-function renderMenu(){
-    const items = menus[canteenSelect.value];
-
-    menuDiv.innerHTML = "";
-
-    if(!items.length){
-        menuDiv.innerHTML = "<p class='empty'>No items available</p>";
-        return;
-    }
-
-    items.forEach(item => {
-        const card = document.createElement("div");
-        card.className = "card";
-
-        const name = document.createElement("span");
-        name.innerText = `${item.name} ₹${item.price}`;
-
-        const btn = document.createElement("button");
-        btn.innerText = "Add";
-        btn.onclick = () => addToCart(item);
-
-        card.appendChild(name);
-        card.appendChild(btn);
-
-        menuDiv.appendChild(card);
-    });
-}
-
-// ---------- CART ----------
-function addToCart(item){
-    const found = cart.find(i => i.name === item.name);
-    if(found) found.qty++;
-    else cart.push({...item, qty:1});
+function add(name, price){
+    let item = cart.find(i=>i.name===name);
+    if(item) item.qty++;
+    else cart.push({name,price,qty:1});
     renderCart();
 }
 
 function renderCart(){
-    cartDiv.innerHTML = "";
+    cartDiv = document.getElementById("cart");
+    cartDiv.innerHTML="";
+    let total=0;
 
-    if(cart.length === 0){
-        cartDiv.innerHTML = "<p class='empty'>Cart is empty</p>";
-        totalDiv.innerText = "Total: ₹0";
-        return;
-    }
-
-    let total = 0;
-
-    cart.forEach((item, index) => {
-        total += item.price * item.qty;
-
-        const card = document.createElement("div");
-        card.className = "card";
-
-        card.innerHTML = `
-            ${item.name} x${item.qty}
-        `;
-
-        const plus = document.createElement("button");
-        plus.innerText = "+";
-        plus.onclick = () => changeQty(index,1);
-
-        const minus = document.createElement("button");
-        minus.innerText = "-";
-        minus.onclick = () => changeQty(index,-1);
-
-        card.appendChild(plus);
-        card.appendChild(minus);
-
-        cartDiv.appendChild(card);
+    cart.forEach((i,index)=>{
+        total += i.price*i.qty;
+        cartDiv.innerHTML += `
+        <div class="cart-item">
+        ${i.name} x${i.qty}
+        <span>
+        <button onclick="changeQty(${index},1)">+</button>
+        <button onclick="changeQty(${index},-1)">-</button>
+        <button class="remove" onclick="removeItem(${index})">x</button>
+        </span>
+        </div>`;
     });
 
-    totalDiv.innerText = `Total: ₹${total}`;
+    totalDisplay.innerText = total;
 }
 
-function changeQty(index, val){
-    cart[index].qty += val;
-    if(cart[index].qty <= 0) cart.splice(index,1);
+function changeQty(i,val){
+    cart[i].qty += val;
+    if(cart[i].qty<=0) cart.splice(i,1);
     renderCart();
 }
 
-// ---------- ORDER ----------
-async function placeOrder(){
-    if(cart.length === 0) return alert("Cart empty");
+function removeItem(i){
+    cart.splice(i,1);
+    renderCart();
+}
 
-    try {
-        const res = await fetch("/order", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                user_id: currentUser.id,
-                canteen: canteenSelect.value,
-                items: cart
-            })
-        });
+function placeOrder(){
+    if(cart.length===0){ alert("Empty cart"); return; }
 
-        const data = await res.json();
-        alert("Order ID: " + data.order_id);
+    let user = JSON.parse(localStorage.getItem("user"));
+    let payment = paymentSelect.value;
+    let time = timeSelect.value;
 
-    } catch {
-        alert("Order saved locally");
-    }
+    let order = {
+        id:"ORD"+Date.now(),
+        user,
+        cart: JSON.parse(JSON.stringify(cart)),
+        payment,
+        time,
+        status:"Pending"
+    };
 
-    cart = [];
+    let orders = JSON.parse(localStorage.getItem("orders")||"[]");
+    orders.push(order);
+    localStorage.setItem("orders",JSON.stringify(orders));
+
+    alert("Order placed!");
+
+    cart=[];
     renderCart();
     loadHistory();
 }
 
-// ---------- HISTORY ----------
-async function loadHistory(){
-    historyDiv.innerHTML = "Loading...";
+function loadHistory(){
+    let user = JSON.parse(localStorage.getItem("user"));
+    let orders = JSON.parse(localStorage.getItem("orders")||"[]");
 
-    try {
-        const res = await fetch(`/orders/${currentUser.id}`);
-        const orders = await res.json();
+    history.innerHTML="";
 
-        historyDiv.innerHTML = "";
-
-        if(!orders.length){
-            historyDiv.innerHTML = "<p class='empty'>No orders yet</p>";
-            return;
-        }
-
-        orders.forEach(o => {
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerText = `${o.id} - ${o.canteen} (${o.status})`;
-            historyDiv.appendChild(card);
-        });
-
-    } catch {
-        historyDiv.innerHTML = "<p class='empty'>No backend connection</p>";
-    }
+    orders.filter(o=>o.user.id===user.id).forEach(o=>{
+        let items = o.cart.map(i=>`${i.name} x${i.qty}`).join(", ");
+        history.innerHTML += `<p>${o.id} - ${items}</p>`;
+    });
 }
 
-// ---------- START ----------
-init();
+function showOrders(){
+    let user = JSON.parse(localStorage.getItem("user"));
+
+    if(user.id!=="admin123"){ alert("Access denied"); return; }
+
+    let orders = JSON.parse(localStorage.getItem("orders")||"[]");
+    admin.innerHTML="";
+
+    orders.forEach(o=>{
+        let items = o.cart.map(i=>`${i.name} x${i.qty}`).join(", ");
+        admin.innerHTML += `<p>${o.id} - ${o.user.name} - ${items}</p>`;
+    });
+}
+
+window.onload = function(){
+    if(localStorage.getItem("user")) initApp();
+}
 
 </script>
 
