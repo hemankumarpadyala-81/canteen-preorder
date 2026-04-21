@@ -1,45 +1,84 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Canteen System</title>
+<title>Smart Canteen Pro</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#f3f4f6;}
-header{background:#111827;color:white;padding:15px;text-align:center;font-size:22px;}
-
-.box{background:white;margin:10px;padding:15px;border-radius:10px;}
+body { margin:0; font-family:Arial; background:#f3f4f6;}
+header { background:#111827; color:#fff; padding:15px; text-align:center;}
+.container { display:flex; flex-wrap:wrap; padding:10px;}
+.box { background:#fff; margin:10px; padding:15px; border-radius:10px; flex:1; min-width:280px;}
 .hidden{display:none;}
 
-button{padding:6px 10px;border:none;border-radius:5px;background:#2563eb;color:white;cursor:pointer;}
+button{
+padding:6px 10px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+background:#2563eb;
+color:white;
+}
+
 button.danger{background:red;}
 button.success{background:green;}
 
-.container{display:flex;flex-wrap:wrap;}
-.section{flex:1;min-width:280px;margin:10px;}
+.menu-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+gap:10px;
+}
 
-.card{background:#fafafa;padding:10px;border-radius:10px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.card img{width:100%;height:90px;object-fit:cover;border-radius:8px;}
+.card{
+background:#fafafa;
+padding:10px;
+border-radius:8px;
+text-align:center;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
 
-.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.card img{
+width:100%;
+height:90px;
+object-fit:cover;
+border-radius:8px;
+}
 
-.cart-item{display:flex;justify-content:space-between;margin:5px 0;}
+.cart-item{
+display:flex;
+justify-content:space-between;
+}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;}
+.canteen-card img{
+width:100%;
+height:100px;
+object-fit:cover;
+border-radius:10px;
+}
+
+.canteen-card{
+text-align:center;
+background:#fafafa;
+padding:10px;
+border-radius:10px;
+margin:10px 0;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
 </style>
 </head>
 
 <body>
 
-<header>🍽️ Smart Canteen System</header>
+<header>🍽️ Smart Canteen Pro</header>
 
 <!-- LOGIN -->
 <div id="loginBox" class="box">
 <h3>Login</h3>
-<input id="name" placeholder="Name"><br><br>
-<input id="id" placeholder="ID"><br><br>
+<input id="nameInput" placeholder="Name"><br><br>
+<input id="idInput" placeholder="ID"><br><br>
 <button onclick="login()">Login</button>
 </div>
 
@@ -47,232 +86,184 @@ button.success{background:green;}
 <div id="canteenBox" class="box hidden">
 <h3>Select Canteen</h3>
 
-<div class="card" onclick="selectCanteen('BALL 1')">
+<div class="canteen-card" onclick="selectCanteen('BALL 1')">
 <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950">
 <p>BALL 1</p>
 </div>
 
-<div class="card" onclick="selectCanteen('BALL 2')">
+<div class="canteen-card" onclick="selectCanteen('BALL 2')">
 <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5">
 <p>BALL 2</p>
 </div>
 
-<div class="card" onclick="selectCanteen('PENCIL')">
-<img src="https://images.unsplash.com/photo-1550547660-d9450f859349">
+<div class="canteen-card" onclick="selectCanteen('PENCIL')">
+<img src="https://images.unsplash.com/photo-1559339352-11d035aa65de">
 <p>PENCIL</p>
 </div>
 
-<div class="card" onclick="selectCanteen('KC CANTEEN')">
+<div class="canteen-card" onclick="selectCanteen('KC CANTEEN')">
 <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24">
 <p>KC CANTEEN</p>
 </div>
 
-<br>
-<button onclick="goBackLogin()">⬅ Back</button>
+<div class="canteen-card" onclick="selectCanteen('3RD CAMPUS')">
+<img src="https://images.unsplash.com/photo-1604908176997-125f25cc500f">
+<p>3RD CAMPUS</p>
+</div>
+
 </div>
 
 <!-- MAIN APP -->
 <div id="app" class="hidden">
 
-<div class="topbar box">
-<span id="welcome"></span>
-<div>
-<button onclick="goBackCanteen()">⬅ Back</button>
-<button class="danger" onclick="logout()">Logout</button>
+<div class="box">
+<p id="welcome"></p>
 </div>
-</div>
-
-<div class="container">
 
 <!-- MENU -->
-<div class="section box">
+<div class="box">
 <h3>Menu</h3>
 <div id="menu"></div>
 </div>
 
 <!-- CART -->
-<div class="section box">
+<div class="box">
 <h3>Cart</h3>
 <div id="cart"></div>
 <p>Total: ₹<span id="total">0</span></p>
 <button class="success" onclick="placeOrder()">Place Order</button>
 </div>
 
-<!-- HISTORY -->
-<div class="section box">
-<h3>Order History</h3>
-<div id="history"></div>
-</div>
-
-</div>
-
-<!-- ADMIN -->
+<!-- QR -->
 <div class="box">
-<h3>Admin Panel</h3>
-<button onclick="showOrders()">View All Orders</button>
-<div id="admin"></div>
+<h3>QR</h3>
+<div id="qr"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="box">
+<h3>History</h3>
+<div id="history"></div>
 </div>
 
 </div>
 
 <script>
 
-let cart=[];
+let cartItems=[];
 
-// MENU DATA
+// MENUS WITH IMAGES
 const menus={
-"BALL 1":[
-["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"],
+"BALL 1":{
+Snacks:[
 ["Samosa",20,"https://images.unsplash.com/photo-1601050690597-df0568f70950"],
-["Coke",20,"https://images.unsplash.com/photo-1554866585-cd94860890b7"]
+["Sandwich",40,"https://images.unsplash.com/photo-1550507992-eb63ffee0847"]
 ],
-"BALL 2":[
-["Sandwich",40,"https://images.unsplash.com/photo-1550507992-eb63ffee0847"],
+Lunch:[
+["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"],
 ["Fried Rice",100,"https://images.unsplash.com/photo-1603133872878-684f208fb84b"]
-],
-"PENCIL":[
+]
+},
+"PENCIL":{
+Snacks:[
 ["Burger",50,"https://images.unsplash.com/photo-1550547660-d9450f859349"]
 ],
-"KC CANTEEN":[
-["Dosa",40,"https://images.unsplash.com/photo-1612874742237-6526221588e3"]
+Lunch:[
+["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"]
 ]
+}
 };
 
-// LOGIN
 function login(){
-let name=document.getElementById("name").value;
-let id=document.getElementById("id").value;
+let name=document.getElementById("nameInput").value;
+let id=document.getElementById("idInput").value;
 if(!name||!id)return alert("Enter details");
 
 localStorage.setItem("user",JSON.stringify({name,id}));
 
-loginBox.classList.add("hidden");
-canteenBox.classList.remove("hidden");
+document.getElementById("loginBox").classList.add("hidden");
+document.getElementById("canteenBox").classList.remove("hidden");
 }
 
-// CANTEEN NAV
 function selectCanteen(c){
 localStorage.setItem("canteen",c);
 
-canteenBox.classList.add("hidden");
-app.classList.remove("hidden");
+document.getElementById("canteenBox").classList.add("hidden");
+document.getElementById("app").classList.remove("hidden");
 
 let user=JSON.parse(localStorage.getItem("user"));
-welcome.innerText=`Welcome ${user.name} | ${c}`;
+document.getElementById("welcome").innerText=`Welcome ${user.name} | ${c}`;
 
 loadMenu(c);
-loadHistory();
 }
 
-function goBackLogin(){
-canteenBox.classList.add("hidden");
-loginBox.classList.remove("hidden");
-}
-
-function goBackCanteen(){
-app.classList.add("hidden");
-canteenBox.classList.remove("hidden");
-cart=[];
-renderCart();
-}
-
-// MENU
 function loadMenu(c){
 let menuDiv=document.getElementById("menu");
 menuDiv.innerHTML="";
 
-menus[c].forEach(i=>{
+let data=menus[c];
+if(!data){menuDiv.innerHTML="No menu";return;}
+
+for(let cat in data){
+menuDiv.innerHTML+=`<h4>${cat}</h4><div class="menu-grid">`;
+
+data[cat].forEach(item=>{
 menuDiv.innerHTML+=`
 <div class="card">
-<img src="${i[2]}">
-<p>${i[0]} ₹${i[1]}</p>
-<button onclick="addItem('${i[0]}',${i[1]})">Add</button>
+<img src="${item[2]}">
+<p>${item[0]} ₹${item[1]}</p>
+<button onclick="addItem('${item[0]}',${item[1]})">Add</button>
 </div>`;
 });
+
+menuDiv.innerHTML+=`</div>`;
+}
 }
 
-// CART
 function addItem(n,p){
-let item=cart.find(i=>i.name===n);
+let item=cartItems.find(i=>i.name==n);
 if(item)item.qty++;
-else cart.push({name:n,price:p,qty:1});
+else cartItems.push({name:n,price:p,qty:1});
 renderCart();
 }
 
 function renderCart(){
 let cartDiv=document.getElementById("cart");
 cartDiv.innerHTML="";
-let total=0;
+let t=0;
 
-cart.forEach(i=>{
-total+=i.price*i.qty;
-cartDiv.innerHTML+=`
-<div class="cart-item">
-${i.name} x${i.qty}
-</div>`;
+cartItems.forEach((i)=>{
+t+=i.price*i.qty;
+cartDiv.innerHTML+=`${i.name} x${i.qty}<br>`;
 });
 
-document.getElementById("total").innerText=total;
+document.getElementById("total").innerText=t;
 }
 
-// ORDER
 function placeOrder(){
-if(cart.length===0)return alert("Cart empty");
+if(cartItems.length==0)return alert("Empty");
 
-let user=JSON.parse(localStorage.getItem("user"));
-let canteen=localStorage.getItem("canteen");
+let order={id:"ORD"+Date.now(),cart:cartItems,status:"Pending"};
 
 let orders=JSON.parse(localStorage.getItem("orders")||"[]");
-
-orders.push({
-id:"ORD"+Date.now(),
-user,
-canteen,
-cart,
-status:"Pending"
-});
-
+orders.push(order);
 localStorage.setItem("orders",JSON.stringify(orders));
 
-cart=[];
-renderCart();
-loadHistory();
+qr.innerHTML="";
+new QRCode(qr,order.id);
 
-alert("Order placed!");
+cartItems=[];
+renderCart();
+alert("Ordered!");
 }
 
-// HISTORY
 function loadHistory(){
-let user=JSON.parse(localStorage.getItem("user"));
 let orders=JSON.parse(localStorage.getItem("orders")||"[]");
-
 history.innerHTML="";
 
-orders.filter(o=>o.user.id===user.id)
-.forEach(o=>{
-history.innerHTML+=`${o.id} - ${o.status}<br>`;
-});
-}
-
-// ADMIN
-function showOrders(){
-let user=JSON.parse(localStorage.getItem("user"));
-if(user.id!=="admin123")return alert("Access denied");
-
-let orders=JSON.parse(localStorage.getItem("orders")||"[]");
-
-admin.innerHTML="";
-
 orders.forEach(o=>{
-admin.innerHTML+=`
-${o.id} - ${o.user.name} - ${o.canteen} - ${o.status}<br>`;
+history.innerHTML+=`${o.id} (${o.status})<br>`;
 });
-}
-
-// LOGOUT
-function logout(){
-localStorage.clear();
-location.reload();
 }
 
 </script>
