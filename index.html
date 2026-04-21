@@ -9,7 +9,9 @@ body{font-family:Arial;background:#f4f6f9;margin:0}
 header{background:#2c3e50;color:#fff;padding:15px;text-align:center}
 .container{max-width:900px;margin:auto;padding:20px}
 .card{background:#fff;padding:10px;margin:10px 0;border-radius:8px}
-button{padding:6px 10px;border:none;border-radius:5px;background:#2980b9;color:#fff}
+button{padding:6px 10px;border:none;border-radius:5px;background:#2980b9;color:#fff;cursor:pointer}
+button:hover{opacity:0.9}
+.empty{color:#888;font-style:italic}
 </style>
 
 </head>
@@ -27,7 +29,7 @@ button{padding:6px 10px;border:none;border-radius:5px;background:#2980b9;color:#
 
 <div class="container">
 
-<select id="canteen">
+<select id="canteen" onchange="handleCanteenChange()">
 <option>Ball</option>
 <option>Pencil</option>
 <option>KC</option>
@@ -51,131 +53,200 @@ button{padding:6px 10px;border:none;border-radius:5px;background:#2980b9;color:#
 
 <script>
 
-let cart=[];
+let cart = [];
 
-const menus={
+// MENU DATA
+const menus = {
 Ball:[{name:"Burger",price:50},{name:"Fries",price:40}],
 Pencil:[{name:"Pizza",price:120},{name:"Coffee",price:20}],
 KC:[{name:"Dosa",price:30}]
 };
 
-// LOGIN
+// ================= LOGIN =================
 async function login(){
- let name=document.getElementById("name").value;
- let id=document.getElementById("id").value;
+ const name = document.getElementById("name").value.trim();
+ const id = document.getElementById("id").value.trim();
 
- if(!name||!id){alert("Enter details");return;}
+ if(!name || !id){
+   alert("Enter details");
+   return;
+ }
 
- await fetch("/login",{
- method:"POST",
- headers:{"Content-Type":"application/json"},
- body:JSON.stringify({name,id})
- });
+ try {
+   await fetch("/login",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({name,id})
+   });
 
- localStorage.setItem("user",JSON.stringify({name,id}));
+   localStorage.setItem("user", JSON.stringify({name,id}));
+
+   initApp();
+
+ } catch(err){
+   alert("Server error. Try again.");
+ }
+}
+
+// ================= INIT =================
+function initApp(){
+ const user = JSON.parse(localStorage.getItem("user"));
 
  document.getElementById("loginPage").style.display="none";
  document.getElementById("app").style.display="block";
 
- document.getElementById("welcome").innerText="Welcome "+name;
+ document.getElementById("welcome").innerText = "Welcome " + user.name;
 
- loadMenu();
+ renderMenu();
  loadHistory();
 }
 
-// MENU
-function loadMenu(){
- let c=document.getElementById("canteen").value;
- let div=document.getElementById("menu");
+// ================= MENU =================
+function renderMenu(){
+ const canteen = document.getElementById("canteen").value;
+ const div = document.getElementById("menu");
 
- div.innerHTML="";
- menus[c].forEach(item=>{
- div.innerHTML+=`
- <div class="card">
- ${item.name} ₹${item.price}
- <button onclick='add(${JSON.stringify(item)})'>Add</button>
- </div>`;
+ div.innerHTML = "";
+
+ menus[canteen].forEach((item, index)=>{
+   div.innerHTML += `
+   <div class="card">
+     ${item.name} ₹${item.price}
+     <button onclick="add(${index})">Add</button>
+   </div>`;
  });
 }
 
-// CART
-function add(item){
- let f=cart.find(i=>i.name===item.name);
- if(f)f.qty++;
- else cart.push({...item,qty:1});
+// FIXED: index-safe add
+function add(index){
+ const canteen = document.getElementById("canteen").value;
+ const item = menus[canteen][index];
+
+ const existing = cart.find(i=>i.name===item.name);
+ if(existing) existing.qty++;
+ else cart.push({...item, qty:1});
+
  renderCart();
 }
 
+// ================= CART =================
 function renderCart(){
- let div=document.getElementById("cart");
- let total=0;
+ const div = document.getElementById("cart");
 
- div.innerHTML=cart.map(i=>{
- total+=i.price*i.qty;
- return `${i.name} x${i.qty}<br>`;
+ if(cart.length === 0){
+   div.innerHTML = "<p class='empty'>Cart is empty</p>";
+   document.getElementById("total").innerText = "Total: ₹0";
+   return;
+ }
+
+ let total = 0;
+
+ div.innerHTML = cart.map((i,index)=>{
+   total += i.price * i.qty;
+   return `
+   <div class="card">
+     ${i.name} x${i.qty}
+     <button onclick="changeQty(${index},1)">+</button>
+     <button onclick="changeQty(${index},-1)">-</button>
+   </div>`;
  }).join("");
 
- document.getElementById("total").innerText="Total: ₹"+total;
+ document.getElementById("total").innerText = "Total: ₹" + total;
 }
 
-// ORDER
-async function placeOrder(){
- if(cart.length===0){alert("Cart empty");return;}
+function changeQty(index, val){
+ cart[index].qty += val;
 
- let user=JSON.parse(localStorage.getItem("user"));
+ if(cart[index].qty <= 0){
+   cart.splice(index,1);
+ }
 
- let res=await fetch("/order",{
- method:"POST",
- headers:{"Content-Type":"application/json"},
- body:JSON.stringify({
- user_id:user.id,
- canteen:document.getElementById("canteen").value,
- items:cart
- })
- });
-
- let data=await res.json();
-
- alert("Order placed! "+data.order_id);
-
- cart=[];
  renderCart();
- loadHistory();
 }
 
-// HISTORY
+// ================= ORDER =================
+async function placeOrder(){
+ if(cart.length === 0){
+   alert("Cart empty");
+   return;
+ }
+
+ const user = JSON.parse(localStorage.getItem("user"));
+ const canteen = document.getElementById("canteen").value;
+
+ try {
+   const res = await fetch("/order",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({
+       user_id:user.id,
+       canteen,
+       items:cart
+     })
+   });
+
+   const data = await res.json();
+
+   alert("Order placed! ID: " + data.order_id);
+
+   cart = [];
+   renderCart();
+   loadHistory();
+
+ } catch(err){
+   alert("Order failed. Server error.");
+ }
+}
+
+// ================= HISTORY =================
 async function loadHistory(){
- let user=JSON.parse(localStorage.getItem("user"));
+ const user = JSON.parse(localStorage.getItem("user"));
 
- let res=await fetch(`/orders/${user.id}`);
- let orders=await res.json();
+ try {
+   const res = await fetch(`/orders/${user.id}`);
+   const orders = await res.json();
 
- let div=document.getElementById("history");
- div.innerHTML="";
+   const div = document.getElementById("history");
 
- orders.forEach(o=>{
- div.innerHTML+=`
- <div class="card">
- ${o[0]} - ${o[4]} (${o[5]})
- </div>`;
- });
+   if(orders.length === 0){
+     div.innerHTML = "<p class='empty'>No orders yet</p>";
+     return;
+   }
+
+   div.innerHTML = orders.map(o=>`
+     <div class="card">
+       ${o[0]} - ${o[4]} (${o[5]})
+     </div>
+   `).join("");
+
+ } catch(err){
+   document.getElementById("history").innerHTML =
+     "<p class='empty'>Error loading history</p>";
+ }
 }
 
-// LOGOUT
+// ================= CANTEEN SWITCH =================
+function handleCanteenChange(){
+ if(cart.length > 0){
+   if(!confirm("Switching canteen will clear cart. Continue?")){
+     return;
+   }
+   cart = [];
+   renderCart();
+ }
+ renderMenu();
+}
+
+// ================= LOGOUT =================
 function logout(){
  localStorage.clear();
  location.reload();
 }
 
-// INIT
-window.onload=()=>{
+// ================= AUTO LOGIN =================
+window.onload = ()=>{
  if(localStorage.getItem("user")){
- let user=JSON.parse(localStorage.getItem("user"));
- document.getElementById("loginPage").style.display="none";
- document.getElementById("app").style.display="block";
- document.getElementById("welcome").innerText="Welcome "+user.name;
- loadMenu();
- loadHistory();
+   initApp();
  }
 }
 
