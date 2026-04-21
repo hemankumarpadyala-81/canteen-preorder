@@ -22,10 +22,10 @@ img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
 
 <!-- LOGIN PAGE -->
 <div id="loginPage" class="container">
-<h2>Login</h2>
-<input type="text" id="username" placeholder="Username"><br>
-<input type="password" id="password" placeholder="Password"><br>
-<button class="primary" onclick="login()">Login</button>
+<h2>Student Login</h2>
+<input type="text" id="username" placeholder="Enter Name"><br>
+<input type="text" id="studentId" placeholder="Enter ID"><br>
+<button class="primary" onclick="login()">Enter</button>
 </div>
 
 <!-- MAIN APP -->
@@ -60,12 +60,17 @@ img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
 
 // LOGIN FUNCTION
 function login(){
- let u = document.getElementById("username").value;
- let p = document.getElementById("password").value;
- if(u === "admin" && p === "1234"){
+ let name = document.getElementById("username").value.trim();
+ let id = document.getElementById("studentId").value.trim();
+ if(name !== "" && id !== ""){
+  localStorage.setItem("studentName", name);
+  localStorage.setItem("studentId", id);
   document.getElementById("loginPage").style.display="none";
   document.getElementById("app").style.display="block";
  } else {
+  alert("Please enter Name and ID");
+ }
+} else {
   alert("Invalid login (use admin / 1234)");
  }
 }
