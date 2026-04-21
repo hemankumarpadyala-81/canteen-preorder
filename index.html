@@ -1,55 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Canteen Ultimate System</title>
+<title>Smart Canteen System</title>
+
 <style>
-:root { --primary:#2c3e50; --accent:#2980b9; --success:#27ae60; --danger:#e74c3c; }
-body{margin:0;font-family:Segoe UI;background:#f4f6f9}
-header{background:var(--primary);color:#fff;padding:15px;text-align:center}
-.container{max-width:1000px;margin:auto;padding:20px}
-.card{background:#fff;padding:12px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
-.flex{display:flex;align-items:center;justify-content:space-between}
-img{width:60px;height:60px;border-radius:8px;margin-right:10px}
-button{border:none;padding:6px 12px;border-radius:6px;cursor:pointer}
-.add{background:var(--success);color:#fff}
-.primary{background:var(--accent);color:#fff}
-.remove{background:var(--danger);color:#fff}
-.qty{display:flex;gap:5px}
-#app{display:none}
-.total{font-weight:bold;font-size:18px;margin-top:10px}
-.status{font-weight:bold}
-.ready{color:green}
-.prepare{color:orange}
-.search{margin-bottom:10px;padding:8px;width:100%}
+body{font-family:Arial;background:#f4f6f9;margin:0}
+header{background:#2c3e50;color:#fff;padding:15px;text-align:center}
+.container{max-width:900px;margin:auto;padding:20px}
+.card{background:#fff;padding:10px;margin:10px 0;border-radius:8px}
+button{padding:6px 10px;border:none;border-radius:5px;background:#2980b9;color:#fff}
 </style>
+
 </head>
 <body>
 
 <div id="loginPage" class="container">
-<h2>Student Login</h2>
-<input type="text" id="username" placeholder="Enter Name">
-<input type="text" id="studentId" placeholder="Enter ID">
-<button class="primary" onclick="login()">Enter</button>
+<h2>Login</h2>
+<input id="name" placeholder="Name"><br><br>
+<input id="id" placeholder="ID"><br><br>
+<button onclick="login()">Login</button>
 </div>
 
-<div id="app">
+<div id="app" style="display:none">
 <header><h2 id="welcome"></h2></header>
+
 <div class="container">
 
-<select id="canteenSelect" onchange="switchCanteen()"></select>
-<input class="search" placeholder="Search food..." oninput="searchItems(this.value)">
+<select id="canteen">
+<option>Ball</option>
+<option>Pencil</option>
+<option>KC</option>
+</select>
 
-<div id="menuList"></div>
+<h3>Menu</h3>
+<div id="menu"></div>
 
 <h3>Cart</h3>
-<div id="cartList"></div>
-<div class="total" id="totalBill">Total: ₹0</div>
-<button class="primary" onclick="placeOrder()">Place Order</button>
+<div id="cart"></div>
+<p id="total">Total: ₹0</p>
+<button onclick="placeOrder()">Place Order</button>
 
-<h3>Order History</h3>
-<div id="historyList"></div>
+<h3>History</h3>
+<div id="history"></div>
 
 <button onclick="logout()">Logout</button>
 
@@ -57,106 +50,135 @@ button{border:none;padding:6px 12px;border-radius:6px;cursor:pointer}
 </div>
 
 <script>
-'use strict';
 
-function login(){
- let n=username.value.trim(), id=studentId.value.trim();
- if(!n||!id)return alert('Enter Name & ID');
- localStorage.setItem('name',n);
- localStorage.setItem('id',id);
- initApp();
-}
+let cart=[];
 
-function logout(){localStorage.clear();location.reload();}
-
-function initApp(){
- loginPage.style.display='none';
- app.style.display='block';
- welcome.innerText='Welcome, '+localStorage.getItem('name');
- loadCanteens();renderMenu();renderCart();renderHistory();
-}
-
-const canteens={
- "Ball":[{name:"Burger",price:50,img:"https://images.unsplash.com/photo-1550547660-d9450f859349?w=80"},{name:"Fries",price:40,img:"https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=80"}],
- "Pencil":[{name:"Pizza",price:120,img:"https://images.unsplash.com/photo-1548365328-5b849a1a0f7c?w=80"},{name:"Coffee",price:20,img:"https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=80"}],
- "KC":[{name:"Dosa",price:30,img:"https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=80"}],
- "3RD Campus":[{name:"Noodles",price:60,img:"https://images.unsplash.com/photo-1585032226651-759b368d7246?w=80"}],
- "Eat&Play":[{name:"Ice Cream",price:50,img:"https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=80"}]
+const menus={
+Ball:[{name:"Burger",price:50},{name:"Fries",price:40}],
+Pencil:[{name:"Pizza",price:120},{name:"Coffee",price:20}],
+KC:[{name:"Dosa",price:30}]
 };
 
-let currentCanteen='Ball',cart=[],history=[];
+// LOGIN
+async function login(){
+ let name=document.getElementById("name").value;
+ let id=document.getElementById("id").value;
 
-function loadCanteens(){canteenSelect.innerHTML=Object.keys(canteens).map(c=>`<option>${c}</option>`).join('');}
-function switchCanteen(){currentCanteen=canteenSelect.value;renderMenu();}
+ if(!name||!id){alert("Enter details");return;}
 
-function searchItems(q){
- let menu=canteens[currentCanteen].filter(i=>i.name.toLowerCase().includes(q.toLowerCase()));
- displayMenu(menu);
+ await fetch("/login",{
+ method:"POST",
+ headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({name,id})
+ });
+
+ localStorage.setItem("user",JSON.stringify({name,id}));
+
+ document.getElementById("loginPage").style.display="none";
+ document.getElementById("app").style.display="block";
+
+ document.getElementById("welcome").innerText="Welcome "+name;
+
+ loadMenu();
+ loadHistory();
 }
 
-function renderMenu(){displayMenu(canteens[currentCanteen]);}
+// MENU
+function loadMenu(){
+ let c=document.getElementById("canteen").value;
+ let div=document.getElementById("menu");
 
-function displayMenu(menu){
- menuList.innerHTML=menu.map((item,i)=>`
- <div class='card flex'>
-  <div class='flex'><img src='${item.img}'><div>${item.name}<br>₹${item.price}</div></div>
-  <button class='add' onclick='addToCart(${i})'>Add</button>
- </div>`).join('');
+ div.innerHTML="";
+ menus[c].forEach(item=>{
+ div.innerHTML+=`
+ <div class="card">
+ ${item.name} ₹${item.price}
+ <button onclick='add(${JSON.stringify(item)})'>Add</button>
+ </div>`;
+ });
+}
+
+// CART
+function add(item){
+ let f=cart.find(i=>i.name===item.name);
+ if(f)f.qty++;
+ else cart.push({...item,qty:1});
+ renderCart();
 }
 
 function renderCart(){
+ let div=document.getElementById("cart");
  let total=0;
- cartList.innerHTML=cart.map((item,i)=>{
- total+=item.price*item.qty;
- return `<div class='card flex'>${item.name} x${item.qty}
- <div class='qty'>
- <button onclick='changeQty(${i},1)'>+</button>
- <button onclick='changeQty(${i},-1)'>-</button>
- </div>
+
+ div.innerHTML=cart.map(i=>{
+ total+=i.price*i.qty;
+ return `${i.name} x${i.qty}<br>`;
+ }).join("");
+
+ document.getElementById("total").innerText="Total: ₹"+total;
+}
+
+// ORDER
+async function placeOrder(){
+ if(cart.length===0){alert("Cart empty");return;}
+
+ let user=JSON.parse(localStorage.getItem("user"));
+
+ let res=await fetch("/order",{
+ method:"POST",
+ headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({
+ user_id:user.id,
+ canteen:document.getElementById("canteen").value,
+ items:cart
+ })
+ });
+
+ let data=await res.json();
+
+ alert("Order placed! "+data.order_id);
+
+ cart=[];
+ renderCart();
+ loadHistory();
+}
+
+// HISTORY
+async function loadHistory(){
+ let user=JSON.parse(localStorage.getItem("user"));
+
+ let res=await fetch(`/orders/${user.id}`);
+ let orders=await res.json();
+
+ let div=document.getElementById("history");
+ div.innerHTML="";
+
+ orders.forEach(o=>{
+ div.innerHTML+=`
+ <div class="card">
+ ${o[0]} - ${o[4]} (${o[5]})
  </div>`;
- }).join('');
- totalBill.innerText='Total: ₹'+total;
+ });
 }
 
-function changeQty(i,val){
- cart[i].qty+=val;
- if(cart[i].qty<=0)cart.splice(i,1);
- renderCart();
+// LOGOUT
+function logout(){
+ localStorage.clear();
+ location.reload();
 }
 
-function addToCart(i){
- let item=canteens[currentCanteen][i];
- let f=cart.find(c=>c.name===item.name);
- if(f)f.qty++; else cart.push({...item,qty:1});
- renderCart();
+// INIT
+window.onload=()=>{
+ if(localStorage.getItem("user")){
+ let user=JSON.parse(localStorage.getItem("user"));
+ document.getElementById("loginPage").style.display="none";
+ document.getElementById("app").style.display="block";
+ document.getElementById("welcome").innerText="Welcome "+user.name;
+ loadMenu();
+ loadHistory();
+ }
 }
 
-function placeOrder(){
- if(!cart.length)return alert('Cart empty');
- let token=Math.floor(Math.random()*1000);
- let time=new Date().toLocaleTimeString();
- history.push({items:[...cart],token,time,status:'Preparing'});
- cart=[];renderCart();renderHistory();
- notify();
- setTimeout(()=>{history.forEach(o=>o.status='Ready');renderHistory();beep();},5000);
-}
-
-function renderHistory(){
- historyList.innerHTML=history.map(o=>`
- <div class='card'>Token:${o.token}<br>
- ${o.items.map(i=>i.name+' x'+i.qty).join(', ')}<br>
- <span class='status ${o.status==='Ready'?'ready':'prepare'}'>${o.status}</span>
- (${o.time})</div>`).join('');
-}
-
-function notify(){alert('Order Placed!');}
-
-function beep(){
- let audio=new Audio('https://www.soundjay.com/buttons/beep-07.mp3');
- audio.play();
-}
-
-if(localStorage.getItem('name'))initApp();
 </script>
 
 </body>
