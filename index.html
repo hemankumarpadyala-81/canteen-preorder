@@ -7,26 +7,60 @@
 
 <style>
 body{margin:0;font-family:Arial;background:#f3f4f6;}
-header{background:#111827;color:white;padding:15px;text-align:center;font-size:22px;}
+header{background:#111827;color:#fff;padding:15px;text-align:center;font-size:22px;}
 
-.box{background:white;margin:10px;padding:15px;border-radius:10px;}
+.box{background:#fff;margin:10px;padding:15px;border-radius:10px;}
 .hidden{display:none;}
 
-button{padding:6px 10px;border:none;border-radius:5px;background:#2563eb;color:white;cursor:pointer;}
+button{
+padding:6px 10px;
+border:none;
+border-radius:5px;
+background:#2563eb;
+color:white;
+cursor:pointer;
+margin:2px;
+}
+
 button.danger{background:red;}
 button.success{background:green;}
 
 .container{display:flex;flex-wrap:wrap;}
 .section{flex:1;min-width:280px;margin:10px;}
 
-.card{background:#fafafa;padding:10px;border-radius:10px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.card img{width:100%;height:90px;object-fit:cover;border-radius:8px;}
+.card{
+background:#fafafa;
+padding:10px;
+border-radius:10px;
+text-align:center;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+margin-bottom:10px;
+}
 
-.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.card img{
+width:100%;
+height:90px;
+object-fit:cover;
+border-radius:8px;
+}
 
-.cart-item{display:flex;justify-content:space-between;margin:5px 0;}
+.menu-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+gap:10px;
+}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;}
+.cart-item{
+display:flex;
+justify-content:space-between;
+margin:5px 0;
+}
+
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
 </style>
 </head>
 
@@ -47,22 +81,22 @@ button.success{background:green;}
 <h3>Select Canteen</h3>
 
 <div class="card" onclick="selectCanteen('BALL 1')">
-<img src="https://images.unsplash.com/photo-1601050690597-df0568f70950">
+<img src="https://source.unsplash.com/400x300/?canteen">
 <p>BALL 1</p>
 </div>
 
 <div class="card" onclick="selectCanteen('BALL 2')">
-<img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5">
+<img src="https://source.unsplash.com/400x300/?food-court">
 <p>BALL 2</p>
 </div>
 
 <div class="card" onclick="selectCanteen('PENCIL')">
-<img src="https://images.unsplash.com/photo-1550547660-d9450f859349">
+<img src="https://source.unsplash.com/400x300/?cafeteria">
 <p>PENCIL</p>
 </div>
 
 <div class="card" onclick="selectCanteen('KC CANTEEN')">
-<img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24">
+<img src="https://source.unsplash.com/400x300/?mess-food">
 <p>KC CANTEEN</p>
 </div>
 
@@ -92,8 +126,15 @@ button.success{background:green;}
 <!-- CART -->
 <div class="section box">
 <h3>Cart</h3>
+
+<div>
+<button onclick="undo()">⬅ Undo</button>
+<button onclick="redo()">Redo ➡</button>
+</div>
+
 <div id="cart"></div>
 <p>Total: ₹<span id="total">0</span></p>
+
 <button class="success" onclick="placeOrder()">Place Order</button>
 </div>
 
@@ -116,24 +157,26 @@ button.success{background:green;}
 
 <script>
 
-let cart=[];
+let cart = [];
+let undoStack = [];
+let redoStack = [];
 
 // MENU DATA
-const menus={
+const menus = {
 "BALL 1":[
-["Biryani",120,"https://images.unsplash.com/photo-1604908176997-125f25cc500f"],
-["Samosa",20,"https://images.unsplash.com/photo-1601050690597-df0568f70950"],
-["Coke",20,"https://images.unsplash.com/photo-1554866585-cd94860890b7"]
+["Biryani",120,"https://source.unsplash.com/400x300/?biryani"],
+["Samosa",20,"https://source.unsplash.com/400x300/?samosa"],
+["Coke",20,"https://source.unsplash.com/400x300/?soft-drink"]
 ],
 "BALL 2":[
-["Sandwich",40,"https://images.unsplash.com/photo-1550507992-eb63ffee0847"],
-["Fried Rice",100,"https://images.unsplash.com/photo-1603133872878-684f208fb84b"]
+["Fried Rice",100,"https://source.unsplash.com/400x300/?fried-rice"],
+["Sandwich",40,"https://source.unsplash.com/400x300/?sandwich"]
 ],
 "PENCIL":[
-["Burger",50,"https://images.unsplash.com/photo-1550547660-d9450f859349"]
+["Burger",50,"https://source.unsplash.com/400x300/?burger"]
 ],
 "KC CANTEEN":[
-["Dosa",40,"https://images.unsplash.com/photo-1612874742237-6526221588e3"]
+["Dosa",40,"https://source.unsplash.com/400x300/?dosa"]
 ]
 };
 
@@ -149,7 +192,20 @@ loginBox.classList.add("hidden");
 canteenBox.classList.remove("hidden");
 }
 
-// CANTEEN NAV
+// NAV
+function goBackLogin(){
+canteenBox.classList.add("hidden");
+loginBox.classList.remove("hidden");
+}
+
+function goBackCanteen(){
+app.classList.add("hidden");
+canteenBox.classList.remove("hidden");
+cart=[];
+renderCart();
+}
+
+// CANTEEN
 function selectCanteen(c){
 localStorage.setItem("canteen",c);
 
@@ -161,18 +217,6 @@ welcome.innerText=`Welcome ${user.name} | ${c}`;
 
 loadMenu(c);
 loadHistory();
-}
-
-function goBackLogin(){
-canteenBox.classList.add("hidden");
-loginBox.classList.remove("hidden");
-}
-
-function goBackCanteen(){
-app.classList.add("hidden");
-canteenBox.classList.remove("hidden");
-cart=[];
-renderCart();
 }
 
 // MENU
@@ -190,11 +234,31 @@ menuDiv.innerHTML+=`
 });
 }
 
-// CART
+// CART + UNDO REDO
+function saveState(){
+undoStack.push(JSON.parse(JSON.stringify(cart)));
+redoStack=[];
+}
+
 function addItem(n,p){
+saveState();
 let item=cart.find(i=>i.name===n);
 if(item)item.qty++;
 else cart.push({name:n,price:p,qty:1});
+renderCart();
+}
+
+function undo(){
+if(undoStack.length===0)return;
+redoStack.push(JSON.parse(JSON.stringify(cart)));
+cart=undoStack.pop();
+renderCart();
+}
+
+function redo(){
+if(redoStack.length===0)return;
+undoStack.push(JSON.parse(JSON.stringify(cart)));
+cart=redoStack.pop();
 renderCart();
 }
 
@@ -228,7 +292,8 @@ id:"ORD"+Date.now(),
 user,
 canteen,
 cart,
-status:"Pending"
+status:"Pending",
+time:new Date().toLocaleString()
 });
 
 localStorage.setItem("orders",JSON.stringify(orders));
@@ -248,8 +313,12 @@ let orders=JSON.parse(localStorage.getItem("orders")||"[]");
 history.innerHTML="";
 
 orders.filter(o=>o.user.id===user.id)
+.reverse()
 .forEach(o=>{
-history.innerHTML+=`${o.id} - ${o.status}<br>`;
+history.innerHTML+=`
+<b>${o.id}</b> - ${o.status}<br>
+${o.cart.map(i=>i.name+" x"+i.qty).join(", ")}<br>
+<small>${o.time}</small><hr>`;
 });
 }
 
