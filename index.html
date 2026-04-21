@@ -1,195 +1,211 @@
 <script>
 
-let cart = [];
-
-/* ---------- INIT ---------- */
-window.onload = () => {
-    const user = getUser();
-    if (user) initApp();
+// ================= STATE =================
+const State = {
+    cart: JSON.parse(localStorage.getItem("cart")) || [],
+    user: JSON.parse(localStorage.getItem("user"))
 };
 
-/* ---------- HELPERS ---------- */
-function getEl(id) {
-    return document.getElementById(id);
-}
+// ================= UTIL =================
+const $ = (id) => document.getElementById(id);
 
-function getUser() {
-    return JSON.parse(localStorage.getItem("user"));
-}
+const Storage = {
+    getOrders: () => JSON.parse(localStorage.getItem("orders") || "[]"),
+    saveOrders: (orders) => localStorage.setItem("orders", JSON.stringify(orders)),
+    saveCart: () => localStorage.setItem("cart", JSON.stringify(State.cart))
+};
 
-function getOrders() {
-    return JSON.parse(localStorage.getItem("orders") || "[]");
-}
+// ================= AUTH =================
+const Auth = {
+    login(name, id) {
+        const role = id === "admin123" ? "admin" : "user";
+        State.user = { name, id, role };
+        localStorage.setItem("user", JSON.stringify(State.user));
+    },
 
-function saveOrders(data) {
-    localStorage.setItem("orders", JSON.stringify(data));
-}
-
-/* ---------- LOGIN ---------- */
-function login() {
-    const name = getEl("studentName").value.trim();
-    const id = getEl("studentId").value.trim();
-
-    if (!name || !id) {
-        alert("Enter valid details");
-        return;
+    logout() {
+        localStorage.removeItem("user");
+        location.reload();
     }
+};
 
-    const role = (id === "admin123") ? "admin" : "user";
+// ================= CART =================
+const Cart = {
+    add(name, price) {
+        const item = State.cart.find(i => i.name === name);
+        item ? item.qty++ : State.cart.push({ name, price, qty: 1 });
+        Storage.saveCart();
+        UI.renderCart();
+    },
 
-    localStorage.setItem("user", JSON.stringify({ name, id, role }));
-    initApp();
-}
+    update(index, change) {
+        State.cart[index].qty += change;
+        if (State.cart[index].qty <= 0) State.cart.splice(index, 1);
+        Storage.saveCart();
+        UI.renderCart();
+    },
 
-/* ---------- INIT APP ---------- */
-function initApp() {
-    const user = getUser();
+    remove(index) {
+        State.cart.splice(index, 1);
+        Storage.saveCart();
+        UI.renderCart();
+    },
 
-    getEl("loginBox").classList.add("hidden");
-    getEl("mainApp").classList.remove("hidden");
-    getEl("welcome").innerText = `Welcome ${user.name}`;
+    clear() {
+        State.cart = [];
+        Storage.saveCart();
+        UI.renderCart();
+    },
 
-    loadHistory();
-}
-
-/* ---------- LOGOUT ---------- */
-function logout() {
-    localStorage.removeItem("user");
-    location.reload();
-}
-
-/* ---------- CART ---------- */
-function add(name, price) {
-    const item = cart.find(i => i.name === name);
-
-    if (item) item.qty++;
-    else cart.push({ name, price, qty: 1 });
-
-    renderCart();
-}
-
-function renderCart() {
-    const cartDiv = getEl("cart");
-    const totalEl = getEl("total");
-
-    cartDiv.innerHTML = "";
-    let total = 0;
-
-    cart.forEach((i, index) => {
-        total += i.price * i.qty;
-
-        cartDiv.innerHTML += `
-        <div class="cart-item">
-            ${i.name} x${i.qty}
-            <span>
-                <button onclick="updateQty(${index},1)">+</button>
-                <button onclick="updateQty(${index},-1)">-</button>
-                <button class="remove" onclick="removeItem(${index})">x</button>
-            </span>
-        </div>`;
-    });
-
-    totalEl.innerText = total;
-}
-
-function updateQty(index, change) {
-    cart[index].qty += change;
-
-    if (cart[index].qty <= 0) {
-        cart.splice(index, 1);
+    total() {
+        return State.cart.reduce((sum, i) => sum + i.price * i.qty, 0);
     }
+};
 
-    renderCart();
-}
+// ================= ORDER =================
+const Order = {
+    place() {
+        if (State.cart.length === 0) return alert("Cart is empty");
 
-function removeItem(index) {
-    cart.splice(index, 1);
-    renderCart();
-}
+        const payment = $("payment").value;
+        const time = $("time").value;
 
-/* ---------- ORDER ---------- */
-function placeOrder() {
-    if (cart.length === 0) {
-        alert("Cart is empty");
-        return;
+        if (!time) return alert("Select pickup time");
+
+        const order = {
+            id: "ORD" + Date.now(),
+            user: State.user,
+            cart: structuredClone(State.cart),
+            payment,
+            time,
+            status: "Pending",
+            createdAt: new Date().toLocaleString()
+        };
+
+        const orders = Storage.getOrders();
+        orders.push(order);
+        Storage.saveOrders(orders);
+
+        alert(`Order placed! ID: ${order.id}`);
+
+        Cart.clear();
+        UI.renderHistory();
     }
+};
 
-    const user = getUser();
-    const payment = getEl("payment").value;
-    const time = getEl("time").value;
+// ================= UI =================
+const UI = {
 
-    if (!time) {
-        alert("Select pickup time");
-        return;
-    }
+    init() {
+        if (State.user) {
+            $("loginBox").classList.add("hidden");
+            $("mainApp").classList.remove("hidden");
+            $("welcome").innerText = `Welcome ${State.user.name}`;
+            this.renderCart();
+            this.renderHistory();
+        }
+    },
 
-    const order = {
-        id: "ORD" + Date.now(),
-        user,
-        cart: structuredClone(cart),
-        payment,
-        time,
-        status: "Pending"
-    };
+    renderCart() {
+        const cartDiv = $("cart");
+        cartDiv.innerHTML = "";
 
-    const orders = getOrders();
-    orders.push(order);
-    saveOrders(orders);
+        State.cart.forEach((item, i) => {
+            cartDiv.innerHTML += `
+            <div class="cart-item">
+                ${item.name} x${item.qty}
+                <span>
+                    <button onclick="Cart.update(${i},1)">+</button>
+                    <button onclick="Cart.update(${i},-1)">-</button>
+                    <button class="remove" onclick="Cart.remove(${i})">x</button>
+                </span>
+            </div>`;
+        });
 
-    alert(`Order placed! ID: ${order.id}`);
+        $("total").innerText = Cart.total();
+    },
 
-    cart = [];
-    renderCart();
-    loadHistory();
-}
+    renderHistory() {
+        const historyDiv = $("history");
+        const orders = Storage.getOrders();
 
-/* ---------- HISTORY ---------- */
-function loadHistory() {
-    const user = getUser();
-    const orders = getOrders();
+        historyDiv.innerHTML = "";
 
-    const historyDiv = getEl("history");
-    historyDiv.innerHTML = "";
+        orders
+            .filter(o => o.user.id === State.user.id)
+            .forEach(o => {
+                const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
 
-    orders
-        .filter(o => o.user.id === user.id)
-        .forEach(o => {
+                historyDiv.innerHTML += `
+                <p>
+                    <b>${o.id}</b><br>
+                    ${items}<br>
+                    ${o.time} | ${o.payment} | ${o.status}
+                </p>`;
+            });
+    },
+
+    renderAdmin() {
+        if (State.user.role !== "admin") {
+            alert("Access denied");
+            return;
+        }
+
+        const adminDiv = $("admin");
+        const orders = Storage.getOrders();
+
+        adminDiv.innerHTML = "";
+
+        orders.forEach(o => {
             const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
 
-            historyDiv.innerHTML += `
+            adminDiv.innerHTML += `
             <p>
                 <b>${o.id}</b><br>
+                ${o.user.name} (${o.user.id})<br>
                 ${items}<br>
-                ${o.time} | ${o.payment} | ${o.status}
+                ${o.time} | ${o.payment}
             </p>`;
         });
-}
-
-/* ---------- ADMIN ---------- */
-function showOrders() {
-    const user = getUser();
-
-    if (user.role !== "admin") {
-        alert("Access denied");
-        return;
     }
+};
 
-    const orders = getOrders();
-    const adminDiv = getEl("admin");
+// ================= EVENTS =================
+function login() {
+    const name = $("studentName").value.trim();
+    const id = $("studentId").value.trim();
 
-    adminDiv.innerHTML = "";
+    if (!name || !id) return alert("Enter valid details");
 
-    orders.forEach(o => {
-        const items = o.cart.map(i => `${i.name} x${i.qty}`).join(", ");
-
-        adminDiv.innerHTML += `
-        <p>
-            <b>${o.id}</b><br>
-            ${o.user.name} (${o.user.id})<br>
-            ${items}<br>
-            ${o.time} | ${o.payment} | ${o.status}
-        </p>`;
-    });
+    Auth.login(name, id);
+    UI.init();
 }
+
+function logout() {
+    Auth.logout();
+}
+
+function add(name, price) {
+    Cart.add(name, price);
+}
+
+function changeQty(i, val) {
+    Cart.update(i, val);
+}
+
+function removeItem(i) {
+    Cart.remove(i);
+}
+
+function placeOrder() {
+    Order.place();
+}
+
+function showOrders() {
+    UI.renderAdmin();
+}
+
+// ================= START =================
+window.onload = () => UI.init();
 
 </script>
